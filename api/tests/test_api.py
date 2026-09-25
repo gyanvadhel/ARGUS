@@ -55,6 +55,16 @@ def test_scan_phone_with_community_reports():
     assert r["kind"] == "phone" and r["score"] >= 60
 
 
+def test_call_turn_endpoint():
+    body = {"transcript": [{"role": "assistant", "text": "Hi"}, {"role": "caller", "text": "Wrong number, sorry"}]}
+    r = client.post("/call/turn", json=body)
+    assert r.status_code == 200 and r.json()["mode"] == "scripted"
+
+
+def test_call_turn_rejects_empty_transcript():
+    assert client.post("/call/turn", json={"transcript": []}).status_code == 422
+
+
 def test_scan_text():
     r = client.post("/scan", json={"input": "Hey are we still on for lunch tomorrow at noon?"})
     assert r.status_code == 200

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
 from argus_api import config
+from argus_api.call import CallTurnRequest, CallTurnResponse, reply_to
 from argus_api.checkers.email import check_email
 from argus_api.checkers.file import MAX_FILE_BYTES, check_file
 from argus_api.checkers.phone import check_phone, normalize
@@ -68,3 +69,8 @@ async def scan_file(file: UploadFile) -> Verdict:
 @app.get("/phone/normalize")
 def phone_normalize(number: str) -> dict:
     return {"e164": normalize(number)}
+
+
+@app.post("/call/turn", response_model=CallTurnResponse)
+def call_turn(req: CallTurnRequest) -> CallTurnResponse:
+    return reply_to(req)
