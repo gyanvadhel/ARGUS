@@ -61,6 +61,17 @@ to whoever runs the server. Setting it up takes about ten minutes:
 8. Restart the web app, open **Inbox** and click **Connect Gmail**. Google will warn that it hasn't verified the app.
    That's expected for your own app: choose **Continue**.
 
+## Family alerts on Telegram (optional)
+
+Trusted contacts who connect on Telegram get a message the moment something high-risk reaches you: a scan, an
+inbox email or a call. Alerts say what kind of thing it was and how risky. They never include what your messages
+or emails said, and links are written so they can't be clicked. To set it up:
+
+1. In Telegram, open **@BotFather**, send `/newbot`, and give the bot a name and a username ending in `bot`.
+2. Put the token BotFather gives you in `web/.env.local` as `TELEGRAM_BOT_TOKEN`, then restart the web app.
+3. In **Family**, add a contact and click **Connect Telegram**. They scan the QR code (or open the link) and press
+   **Start**; Argus confirms within a few seconds and sends them a welcome message.
+
 ## Browser extension
 
 `extension/` is a Chrome and Edge extension. It warns you before dangerous pages open, shows a verdict for the page
@@ -88,9 +99,12 @@ cd ../extension; npm test
    - **Faked caller ID** is a number that can't exist, so the caller ID was forged.
    - **One-ring trap** and **Look-alike area code** are brand-new scam numbers that reputation-only apps miss.
    - Press **Simulate a call from this number** to see the incoming-call screen.
-5. **Inbox:** connect Gmail and watch your latest emails get checked one by one.
-6. **Extension:** load it, then open `http://paypal-security-alert.net/verify`: Argus stops the page before you can use it.
-7. **Overview:** the dashboard has counted everything and shows the live threat feeds.
+5. **Inbox:** connect Gmail and watch your latest emails get checked one by one. Open **Spam** to see what Gmail
+   caught, with Argus's reasons.
+6. **Family:** connect someone on Telegram (they scan the QR code), then simulate a call from the reported
+   robocaller: their phone gets the alert while it rings.
+7. **Extension:** load it, then open `http://paypal-security-alert.net/verify`: Argus stops the page before you can use it.
+8. **Overview:** the dashboard has counted everything and shows the live threat feeds.
 
 ## Layout
 

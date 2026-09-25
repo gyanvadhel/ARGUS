@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff, ShieldBan } from "lucide-react";
 import { toast } from "sonner";
+import { alertFamilyAboutCall } from "@/app/(app)/family/actions";
 import { Eye, type EyeMood } from "@/components/eye/eye";
 import { Button } from "@/components/ui/button";
 import { callerVerdict, levelMeta } from "@/lib/format";
@@ -39,6 +40,23 @@ export function IncomingCall({ verdict, community, contacts, reportable = true, 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // A high-risk number is ringing: tell trusted contacts on Telegram right away, not after the call.
+  const [alerted, setAlerted] = useState<number | null>(null);
+  const number = String(info.international ?? verdict.subject);
+  const label = callerVerdict(score, level, verdict.verified);
+  useEffect(() => {
+    if (score < 80 || contacts === 0) return;
+    let live = true;
+    // Deferred so React's development double-run (mount, unmount, mount) sends the alert once, not twice.
+    const t = setTimeout(() => {
+      void alertFamilyAboutCall({ number, score, label, reason: reason ?? label }).then((n) => live && setAlerted(n));
+    }, 0);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [score, contacts, number, label, reason]);
 
   const outcome = {
     declined: { title: "Call declined", body: risky ? "Good call. Argus will keep watching this number." : "The caller can leave a message." },
@@ -98,6 +116,11 @@ export function IncomingCall({ verdict, community, contacts, reportable = true, 
             {reason ?? "Not reported by Argus users and not on any blocklist."}
           </p>
         </div>
+        {alerted != null && alerted > 0 && (
+          <p className="mx-5 mt-3 text-center text-xs text-muted-foreground" role="status">
+            Argus told {alerted} trusted contact{alerted === 1 ? "" : "s"} on Telegram.
+          </p>
+        )}
 
         {state === "ringing" ? (
           <div className="mt-auto px-8 pb-10">
@@ -149,9 +172,9 @@ export function IncomingCall({ verdict, community, contacts, reportable = true, 
           <div className="mt-auto px-8 pb-10 text-center">
             <p className="font-serif text-2xl">{outcome[state].title}</p>
             <p className="mt-2 text-sm text-muted-foreground">{outcome[state].body}</p>
-            {score >= 80 && contacts > 0 && (
+            {score >= 80 && contacts > 0 && alerted === 0 && (
               <p className="mt-3 text-xs text-muted-foreground">
-                Argus would alert {contacts} trusted contact{contacts === 1 ? "" : "s"} about this call (simulated).
+                None of your trusted contacts are connected on Telegram yet, so nobody was alerted. Connect them in Family.
               </p>
             )}
             <Button variant="outline" onClick={onClose} className="mt-6 h-10 rounded-full px-6">

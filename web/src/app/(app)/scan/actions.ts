@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { api } from "@/lib/api";
 import { communityFor, recordSightings } from "@/lib/community-data";
+import { ALERT_AT, alertFamily } from "@/lib/family-alerts";
+import { levelMeta } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Community, Verdict } from "@/lib/types";
 
-export type ScanResult = { ok: true; id: string; verdict: Verdict } | { ok: false; error: string };
+export type ScanResult = { ok: true; id: string; verdict: Verdict; alerted: number } | { ok: false; error: string };
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const PHONEISH = /^\+?[\d\s\-().]{7,20}$/;
@@ -57,10 +59,21 @@ export async function runScan(formData: FormData): Promise<ScanResult> {
       .single();
     if (error) return { ok: false, error: `Scanned, but couldn't save the result: ${error.message}` };
     await recordSightings(supabase, verdict).catch(() => undefined);
+    const alerted =
+      verdict.score >= ALERT_AT
+        ? await alertFamily(supabase, {
+            kind: "scan",
+            scanKind: verdict.kind,
+            subject: verdict.subject,
+            score: verdict.score,
+            label: levelMeta(verdict.level, verdict.verified).label,
+            threat: verdict.threat_type,
+          }).catch(() => 0)
+        : 0;
 
     revalidatePath("/dashboard");
     revalidatePath("/history");
-    return { ok: true, id: data.id, verdict };
+    return { ok: true, id: data.id, verdict, alerted };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Scan failed." };
   }

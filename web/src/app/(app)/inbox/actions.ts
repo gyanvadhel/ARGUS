@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { api } from "@/lib/api";
 import { recordSightings } from "@/lib/community-data";
+import { ALERT_AT, alertFamily } from "@/lib/family-alerts";
+import { levelMeta } from "@/lib/format";
 import {
   fullMessage,
   GmailAccessRevoked,
@@ -116,6 +118,17 @@ export async function scanMessage(messageId: string, folder: Folder = "inbox"): 
     if (error) return { ok: false, error: `Checked, but couldn't save it: ${error.message}` };
     await supabase.from("mail_scans").upsert({ user_id: user.id, message_id: messageId, scan_id: data.id });
     await recordSightings(supabase, verdict).catch(() => undefined);
+    // A dangerous email that reached the inbox is worth telling family about; one Gmail already binned isn't.
+    if (folder === "inbox" && verdict.score >= ALERT_AT) {
+      await alertFamily(supabase, {
+        kind: "scan",
+        scanKind: "email",
+        subject: `gmail:${messageId}`,
+        score: verdict.score,
+        label: levelMeta(verdict.level, verdict.verified).label,
+        threat: verdict.threat_type,
+      }).catch(() => 0);
+    }
     revalidatePath("/dashboard");
     revalidatePath("/history");
     return {

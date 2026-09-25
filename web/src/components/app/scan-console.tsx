@@ -112,6 +112,7 @@ export function ScanConsole({ initialInput }: { initialInput?: string }) {
         return;
       }
       setResult(res);
+      if (res.alerted > 0) toast(`Told ${res.alerted} trusted contact${res.alerted === 1 ? "" : "s"} on Telegram.`);
     } catch {
       toast.error("The scan couldn't finish. Refresh the page and try again.");
     } finally {
