@@ -80,7 +80,7 @@ def summarize(rows: list[dict], now: datetime | None = None) -> Signal:
 
     if ages and this_year == 0:
         return Signal(source=SOURCE, status="suspicious", score=25, weight=1.0,
-                      summary=f"{summary}, the latest over a year ago: the number may have changed hands", evidence=evidence)
+                      summary=f"{summary}, but none in the past year", evidence=evidence)
     if last_days is not None:
         summary += f", most recently {_when(last_days)}"
     if total >= 10:

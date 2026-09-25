@@ -42,7 +42,7 @@ async def test_old_complaints_fade(online):
         respx.get(url__startswith=fcc.FCC_URL).respond(json=rows(4, days_ago=500))
         s = await fcc.fcc_signal(_parse("+1 406-987-3277"))
     assert s.status == "suspicious" and s.score <= 30
-    assert "over a year ago" in s.summary
+    assert "none in the past year" in s.summary and "changed hands" not in s.summary
 
 
 async def test_no_complaints_is_clean(online):

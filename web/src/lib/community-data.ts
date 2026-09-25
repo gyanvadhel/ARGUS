@@ -23,7 +23,8 @@ export async function communityFor(supabase: Supabase, e164: string): Promise<{ 
 /** A high-risk text or email that contains phone numbers marks each of them as seen in a scam. */
 export async function recordSightings(supabase: Supabase, verdict: Verdict): Promise<void> {
   if ((verdict.kind !== "text" && verdict.kind !== "email") || verdict.score < 60) return;
-  const numbers = verdict.signals.filter((s) => s.source.startsWith("Phone: +")).map((s) => s.source.slice("Phone: ".length));
+  // A number can have several evidence lines ("Phone: +1…" and "Phone: +1… (FCC)"): keep just the number, once.
+  const numbers = [...new Set(verdict.signals.map((s) => s.source.match(/^Phone: (\+[1-9]\d{6,14})\b/)?.[1]).filter(Boolean))] as string[];
   if (!numbers.length) return;
   await supabase
     .from("phone_sightings")

@@ -1,8 +1,8 @@
 const ITEMS = [
   { title: "Live call screening", body: "An Android app that screens incoming calls as they ring, using the phone network's own caller verification." },
-  { title: "Gmail and Outlook", body: "Connect your inbox and Argus flags phishing before you open it." },
-  { title: "Browser extension", body: "A warning before a malicious page ever loads." },
+  { title: "Outlook inbox", body: "Gmail already connects today. Outlook is next, so phishing gets flagged there before you open it too." },
   { title: "Real family alerts", body: "Your trusted contacts get a text the moment something high-risk reaches you." },
+  { title: "Extension in the stores", body: "The Argus browser extension works today in developer mode. One-click install from the Chrome Web Store and Edge Add-ons is next." },
 ];
 
 export function Roadmap() {

@@ -21,7 +21,7 @@ const CHANNELS: { name: string; body: string; subject: string; score: number; le
   },
   {
     name: "Emails",
-    body: "Sender authentication, spoofed display names, reply-to tricks, and every link inside the message.",
+    body: "Sender authentication, spoofed display names, reply-to tricks, and every link inside. Connect Gmail and your inbox gets checked for you.",
     subject: "Final notice: account suspended",
     score: 100,
     level: "HIGH RISK",

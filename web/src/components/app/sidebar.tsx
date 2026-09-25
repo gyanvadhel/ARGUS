@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, LayoutDashboard, LogOut, PhoneIncoming, ScanSearch, Users } from "lucide-react";
+import { History, LayoutDashboard, LogOut, Mail, PhoneIncoming, ScanSearch, Users } from "lucide-react";
 import { WatchingEye } from "@/components/eye/watching-eye";
 import { signOut } from "@/app/(auth)/actions";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/scan", label: "Scan", icon: ScanSearch },
   { href: "/caller-id", label: "Caller ID", icon: PhoneIncoming },
+  { href: "/inbox", label: "Inbox", icon: Mail },
   { href: "/history", label: "History", icon: History },
   { href: "/family", label: "Family", icon: Users },
 ];

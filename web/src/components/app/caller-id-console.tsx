@@ -20,7 +20,7 @@ const SAMPLES = [
   { label: "One-ring trap", value: "+232 76 123456" },
   { label: "Look-alike area code", value: "+1 876 203 4567" },
   { label: "Faked caller ID", value: "+999 123 4567" },
-  { label: "Ordinary number", value: "+1 650-253-0000" },
+  { label: "Ordinary number", value: "+1 202-707-5000" },
 ];
 const CATEGORIES = ["Scam", "Spam", "Robocall", "Fraud", "Other"];
 
