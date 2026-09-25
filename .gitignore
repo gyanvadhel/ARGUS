@@ -21,3 +21,6 @@ build/
 
 # claude local settings
 .claude/settings.local.json
+
+# superpowers scratch
+.superpowers/
