@@ -1,0 +1,154 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-instrument-serif);
+  --font-heading: var(--font-instrument-serif);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-risk-safe: var(--risk-safe);
+  --color-risk-low: var(--risk-low);
+  --color-risk-sus: var(--risk-sus);
+  --color-risk-high: var(--risk-high);
+  --color-risk-unknown: var(--risk-unknown);
+  --color-aurora-1: var(--aurora-1);
+  --color-aurora-2: var(--aurora-2);
+  --color-aurora-3: var(--aurora-3);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root,
+.dark {
+  --radius: 0.875rem;
+  --background: #070b1a;
+  --foreground: #e8ecf8;
+  --card: #0c1228;
+  --card-foreground: #e8ecf8;
+  --popover: #0d1330;
+  --popover-foreground: #e8ecf8;
+  --primary: #9b8cff;
+  --primary-foreground: #0a0e22;
+  --secondary: #151c3b;
+  --secondary-foreground: #e8ecf8;
+  --muted: #11173a;
+  --muted-foreground: #8e97b8;
+  --accent: #1a2250;
+  --accent-foreground: #e8ecf8;
+  --destructive: #ff5d6c;
+  --border: rgb(148 163 255 / 0.12);
+  --input: rgb(148 163 255 / 0.18);
+  --ring: #9b8cff;
+  --chart-1: #9b8cff;
+  --chart-2: #ff8a7a;
+  --chart-3: #5ec8e5;
+  --chart-4: #f5c451;
+  --chart-5: #c38bff;
+  --aurora-1: #6d6bff;
+  --aurora-2: #a66bff;
+  --aurora-3: #ff8a7a;
+  --risk-safe: #5ed3b0;
+  --risk-low: #f5c451;
+  --risk-sus: #ff9f4d;
+  --risk-high: #ff5d6c;
+  --risk-unknown: #8e97b8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  ::selection {
+    background: rgb(155 140 255 / 0.35);
+  }
+}
+
+@utility glass {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.018));
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 20px 60px -30px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+@utility text-aurora {
+  background: linear-gradient(100deg, var(--aurora-1), var(--aurora-2) 45%, var(--aurora-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility eyebrow {
+  font-family: var(--font-geist-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 85% -10%, rgb(109 107 255 / 0.22), transparent 60%),
+    radial-gradient(50rem 36rem at -10% 20%, rgb(166 107 255 / 0.16), transparent 60%),
+    radial-gradient(40rem 30rem at 60% 110%, rgb(255 138 122 / 0.12), transparent 60%),
+    var(--background);
+}
+
+.aurora-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
