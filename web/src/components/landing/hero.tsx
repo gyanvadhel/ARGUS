@@ -9,6 +9,7 @@ import { WatchingEye } from "@/components/eye/watching-eye";
 import { ReactiveWord } from "@/components/fx/reactive-word";
 import { detectKind } from "@/lib/detect";
 import type { ScanKind } from "@/lib/types";
+import { useMedia } from "@/lib/use-media";
 
 const SAMPLES = [
   { label: "a phishing link", value: "http://paypal-security-alert.net/verify-account" },
@@ -56,6 +57,9 @@ export function Hero() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PreviewResult | null>(null);
   const kind = detectKind(value);
+  // On tall phone screens the eye sits lower, filling the space between the headline and the field.
+  const portrait = useMedia("(max-aspect-ratio: 4/5)");
+  const compact = useMedia("(max-width: 640px)");
 
   // Scroll drives the dive into the pupil: copy fades, the camera pushes in, then black.
   useEffect(() => {
@@ -110,7 +114,7 @@ export function Hero() {
   return (
     <section ref={section} className="relative h-[210vh]" aria-label="Argus">
       <div className="sticky top-0 h-dvh overflow-hidden">
-        <Eye mood={mood} dive={dive} target={target} distance={6.8} offsetY={0.6} className="absolute inset-0" />
+        <Eye mood={mood} dive={dive} target={target} distance={6.8} offsetY={portrait ? -0.1 : 0.6} className="absolute inset-0" />
 
         <div ref={overlay} className="absolute inset-0 flex flex-col justify-between px-6 pt-28 sm:px-10">
           <div className="mx-auto flex w-full max-w-[1600px] items-start justify-between gap-10">
@@ -150,11 +154,11 @@ export function Hero() {
                   }}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  placeholder="Paste a link, a message or a phone number"
+                  placeholder={compact ? "Paste anything to check" : "Paste a link, a message or a phone number"}
                   aria-label="Something to check"
                   className="h-12 min-w-0 flex-1 bg-transparent text-[clamp(1.05rem,1.5vw,1.35rem)] outline-none placeholder:text-muted-foreground/80"
                 />
-                <button type="submit" disabled={busy} className="font-display sight-go shrink-0 pb-1.5 text-[2.35rem] disabled:opacity-50">
+                <button type="submit" disabled={busy} className="font-display sight-go shrink-0 pb-1.5 text-3xl disabled:opacity-50 sm:text-[2.35rem]">
                   Check
                 </button>
                 <span className="sight-rule" aria-hidden />

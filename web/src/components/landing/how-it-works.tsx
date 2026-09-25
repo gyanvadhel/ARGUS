@@ -6,11 +6,13 @@ const STEPS = [
   { title: "One honest verdict", body: "A 0–100 risk score, the evidence behind it, and what to do next." },
 ];
 
+// A verdict the engine really returns for this link (live DNS included).
 const PREVIEW = [
   { source: "Argus threat intel", summary: "Fake PayPal security alert domain", color: "var(--risk-high)" },
-  { source: "Argus heuristics", summary: "Mentions PayPal but isn't a PayPal domain", color: "var(--risk-sus)" },
-  { source: "Domain records", summary: "No public registration record found", color: "var(--risk-unknown)" },
-  { source: "VirusTotal", summary: "Checked when your key is added", color: "var(--risk-unknown)" },
+  { source: "Argus heuristics", summary: "Mentions PayPal but isn't an official PayPal domain", color: "var(--risk-sus)" },
+  { source: "Domain check (DNS)", summary: "This domain doesn't exist: the link is fake or already taken down", color: "var(--risk-sus)" },
+  { source: "Phishing.Database", summary: "Not on its list of known phishing domains", color: "var(--risk-safe)" },
+  { source: "VirusTotal", summary: "No record of this link yet", color: "var(--risk-unknown)" },
 ];
 
 export function HowItWorks() {
@@ -41,7 +43,7 @@ export function HowItWorks() {
             <p className="mt-2 break-all font-mono text-sm text-foreground/80">http://paypal-security-alert.net/verify</p>
           </div>
           <div className="text-right">
-            <p className="font-display text-8xl leading-none text-risk-high">80</p>
+            <p className="font-display text-8xl leading-none text-risk-high">99</p>
             <div className="mt-3">
               <LevelPill level="HIGH RISK" />
             </div>

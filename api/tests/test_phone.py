@@ -95,3 +95,15 @@ def test_fake_country_code_is_not_a_real_number():
 def test_valid_unknown_number_is_no_red_flags_not_verified_safe():
     v = check_phone("+1 650-253-0000")
     assert (v.level, v.verified) == ("SAFE", False)
+
+
+def test_with_india_as_home_numbers_without_a_code_read_as_indian(monkeypatch):
+    monkeypatch.setenv("ARGUS_DEFAULT_REGION", "IN")
+    assert normalize("98765 43210") == "+919876543210"
+    assert normalize("1800 180 1111") == "+9118001801111"  # Indian toll-free stays Indian
+
+
+def test_american_style_numbers_still_read_as_american_with_another_home(monkeypatch):
+    monkeypatch.setenv("ARGUS_DEFAULT_REGION", "IN")
+    assert normalize("1-877-556-9255") == "+18775569255"
+    assert check_phone("1-877-556-9255").subject == "+18775569255"

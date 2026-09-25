@@ -69,6 +69,15 @@ def _parse_with_reason(raw: str) -> tuple[PhoneNumber | None, str | None]:
         return None, "it isn't a phone number format any country uses"
     if digits > 15:
         return None, f"phone numbers have at most 15 digits, this has {digits}"
+    # "1-877-556-9255" is how North American numbers are written: if it isn't a real number at home, read it that way.
+    text = raw.strip().lstrip("(")
+    if digits == 11 and text.startswith("1") and not phonenumbers.is_valid_number(parsed):
+        try:
+            american = phonenumbers.parse(raw.strip(), "US")
+            if phonenumbers.is_valid_number(american):
+                parsed = american
+        except phonenumbers.NumberParseException:
+            pass
     result = phonenumbers.is_possible_number_with_reason(parsed)
     if result in (phonenumbers.ValidationResult.IS_POSSIBLE, phonenumbers.ValidationResult.IS_POSSIBLE_LOCAL_ONLY):
         return parsed, None
