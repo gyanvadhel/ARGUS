@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { History, LayoutDashboard, LogOut, PhoneCall, ScanSearch, Users } from "lucide-react";
-import { Logo } from "@/components/brand/logo";
+import { WatchingEye } from "@/components/eye/watching-eye";
 import { signOut } from "@/app/(auth)/actions";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +24,9 @@ export function Sidebar({ name, email }: { name: string; email: string }) {
   const isActive = useActive();
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border/60 bg-background/40 px-4 py-6 backdrop-blur-xl md:flex">
-      <Link href="/" className="flex items-center gap-2 px-2">
-        <Logo />
-        <span className="font-serif text-2xl">Argus</span>
+      <Link href="/" className="flex items-center gap-3 px-2">
+        <WatchingEye className="h-5 w-8 text-foreground" strokeWidth={1.6} />
+        <span className="font-display text-2xl">Argus</span>
       </Link>
       <nav className="mt-10 flex flex-col gap-1">
         {NAV.map(({ href, label, icon: Icon }) => (
@@ -35,7 +35,7 @@ export function Sidebar({ name, email }: { name: string; email: string }) {
             href={href}
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground",
-              isActive(href) && "bg-white/[0.07] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]",
+              isActive(href) && "bg-white/[0.06] text-foreground",
             )}
           >
             <Icon className="size-4" />

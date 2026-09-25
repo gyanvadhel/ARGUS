@@ -1,31 +1,28 @@
-import { AppWindow, BellRing, Inbox, Smartphone } from "lucide-react";
-
 const ITEMS = [
-  { icon: Smartphone, title: "Live call screening", body: "An Android app that screens incoming calls in real time, using the phone network's own caller verification." },
-  { icon: Inbox, title: "Gmail and Outlook", body: "Connect your inbox and Argus flags phishing before you open it." },
-  { icon: AppWindow, title: "Browser extension", body: "A warning before a malicious page ever loads." },
-  { icon: BellRing, title: "Real family alerts", body: "Your trusted contacts get a text the moment something high-risk reaches you." },
+  { title: "Live call screening", body: "An Android app that screens incoming calls as they ring, using the phone network's own caller verification." },
+  { title: "Gmail and Outlook", body: "Connect your inbox and Argus flags phishing before you open it." },
+  { title: "Browser extension", body: "A warning before a malicious page ever loads." },
+  { title: "Real family alerts", body: "Your trusted contacts get a text the moment something high-risk reaches you." },
 ];
 
 export function Roadmap() {
   return (
-    <section id="roadmap" className="mx-auto max-w-7xl px-6 py-24">
-      <h2 className="font-serif text-5xl tracking-tight">Coming next</h2>
-      <p className="mt-3 max-w-xl text-muted-foreground">Designed and on the way. Not live yet.</p>
-      <div className="mt-12 grid gap-4 sm:grid-cols-2">
-        {ITEMS.map(({ icon: Icon, title, body }) => (
-          <div key={title} className="flex gap-5 rounded-3xl border border-dashed border-border p-6">
-            <Icon className="mt-1 size-5 shrink-0 text-muted-foreground" />
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h3 className="text-lg font-medium">{title}</h3>
-                <span className="rounded-full bg-aurora-2/15 px-2.5 py-0.5 text-xs text-aurora-2">Coming soon</span>
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
-            </div>
-          </div>
-        ))}
+    <section id="next" className="mx-auto max-w-[1600px] px-6 py-24 sm:px-10">
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <h2 className="font-display text-[clamp(2.8rem,6vw,6rem)]">Coming next</h2>
+        <p className="max-w-xs text-sm text-muted-foreground">Designed and on the way. Not live yet.</p>
       </div>
+      <ul className="mt-12 grid border-t border-border/70 sm:grid-cols-2">
+        {ITEMS.map((item, i) => (
+          <li key={item.title} className={`border-b border-border/70 py-8 sm:px-8 ${i % 2 === 0 ? "sm:border-r sm:pl-0" : ""}`}>
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="text-xl font-medium">{item.title}</h3>
+              <span className="rounded-full border border-dashed border-foreground/30 px-2.5 py-0.5 text-xs text-muted-foreground">Coming soon</span>
+            </div>
+            <p className="mt-3 max-w-md leading-relaxed text-muted-foreground">{item.body}</p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

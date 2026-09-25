@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FileUp, Loader2, ScanSearch, X } from "lucide-react";
 import { toast } from "sonner";
 import { runScan, type ScanResult } from "@/app/(app)/scan/actions";
-import { Iris } from "@/components/iris/iris";
+import { Eye, type EyeMood } from "@/components/eye/eye";
 import { Button } from "@/components/ui/button";
 import { eicarFile } from "@/lib/eicar";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,22 @@ export function ScanConsole() {
   const [scanning, setScanning] = useState(false);
   const [stage, setStage] = useState(0);
   const [result, setResult] = useState<Extract<ScanResult, { ok: true }> | null>(null);
+  const [focused, setFocused] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+
+  // While you type, the eye reads along the last line of the field.
+  const target = useCallback(() => {
+    const el = textRef.current;
+    if (!focused || !el) return null;
+    const r = el.getBoundingClientRect();
+    const lines = input.split("\n");
+    const row = Math.min(lines.length - 1, 4);
+    return {
+      x: r.left + Math.min(r.width - 24, 12 + (lines[lines.length - 1]?.length ?? 0) * 8.5),
+      y: Math.min(r.bottom - 12, r.top + 14 + row * 26),
+    };
+  }, [focused, input]);
 
   useEffect(() => {
     if (!scanning) return;
@@ -107,22 +122,32 @@ export function ScanConsole() {
     }
   }
 
-  const irisState = scanning
+  const mood: EyeMood = scanning
     ? "scanning"
     : result
-      ? result.verdict.score >= 60 ? "danger" : result.verdict.score < 30 ? "safe" : "idle"
-      : "idle";
+      ? result.verdict.score >= 60 ? "danger" : result.verdict.score < 30 ? "safe" : "watching"
+      : focused || input || file ? "watching" : "idle";
+  const caption = scanning
+    ? STAGES[stage]
+    : result
+      ? result.verdict.score >= 60 ? "That one's dangerous." : result.verdict.score < 30 ? "Looks clean." : "Worth a second look."
+      : focused ? "Reading along�" : "Watching for something to check.";
 
   return (
     <div className="space-y-8">
+      <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+      <div className="relative hidden min-h-72 lg:block">
+        <Eye mood={mood} target={target} distance={4.4} className="absolute inset-0" />
+        <p className="absolute inset-x-0 bottom-1 text-center text-xs text-muted-foreground" aria-live="polite">{caption}</p>
+      </div>
+      <div className="flex min-w-0 flex-col justify-center gap-4">
       <div
-        className={cn("glass relative rounded-3xl p-2 transition-shadow", dragging && "ring-2 ring-primary/60")}
+        className={cn("glass relative rounded-3xl p-2 transition-shadow", dragging && "ring-2 ring-foreground/40")}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); pickFile(e.dataTransfer.files?.[0]); }}
       >
         <div className="flex items-start gap-4 p-4">
-          <Iris state={irisState} size={72} className="hidden shrink-0 sm:block" />
           {file ? (
             <div className="flex min-h-24 flex-1 items-center gap-3">
               <FileUp className="size-5 text-muted-foreground" />
@@ -136,6 +161,9 @@ export function ScanConsole() {
             </div>
           ) : (
             <textarea
+              ref={textRef}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit(); }}
@@ -169,19 +197,17 @@ export function ScanConsole() {
             type="button"
             disabled={scanning}
             onClick={() => runSample(s)}
-            className="rounded-full border border-border/70 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
+            className="rounded-full border border-border/70 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground disabled:opacity-50"
           >
             {s.label}
           </button>
         ))}
       </div>
 
-      {scanning && (
-        <div className="glass flex flex-col items-center rounded-3xl py-14">
-          <Iris state="scanning" size={220} />
-          <p className="mt-6 text-sm text-muted-foreground" aria-live="polite">{STAGES[stage]}</p>
-        </div>
-      )}
+      </div>
+      </div>
+
+      {scanning && <p className="text-sm text-muted-foreground lg:hidden">{STAGES[stage]}</p>}
 
       {result && (
         <div className="space-y-4">
