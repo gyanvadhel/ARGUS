@@ -1,0 +1,104 @@
+body {
+  width: 360px;
+  padding: 18px 20px 16px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+header .eye {
+  color: var(--fg);
+}
+.wordmark {
+  font-size: 22px;
+}
+
+main {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verdict {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: 14px;
+}
+.score {
+  font-size: 64px;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.6ch;
+}
+.label {
+  font-size: 30px;
+  color: var(--tone);
+}
+.threat {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.reasons {
+  margin-top: 16px;
+}
+
+.progress {
+  margin-top: 16px;
+}
+.status {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.evidence {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13px;
+  text-decoration: underline;
+  text-decoration-color: rgb(236 230 220 / 0.3);
+  text-underline-offset: 4px;
+}
+.evidence:hover {
+  text-decoration-color: var(--fg);
+}
+.evidence[hidden] {
+  display: none;
+}
+
+form.sight {
+  margin-top: 18px;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+footer a {
+  text-decoration: none;
+}
+footer a:hover {
+  color: var(--fg);
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.toggle input {
+  accent-color: var(--fg);
+}

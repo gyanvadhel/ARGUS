@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { runScan, type ScanResult } from "@/app/(app)/scan/actions";
 import { Eye, type EyeMood } from "@/components/eye/eye";
 import { Button } from "@/components/ui/button";
+import { detectKind } from "@/lib/detect";
 import { eicarFile } from "@/lib/eicar";
 import { cn } from "@/lib/utils";
 import { ReportNumber } from "./report-number";
@@ -43,8 +44,8 @@ const STAGES = [
   "Weighing the evidence…",
 ];
 
-export function ScanConsole() {
-  const [input, setInput] = useState("");
+export function ScanConsole({ initialInput }: { initialInput?: string }) {
+  const [input, setInput] = useState(initialInput ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -72,6 +73,14 @@ export function ScanConsole() {
     const t = setInterval(() => setStage((s) => Math.min(s + 1, STAGES.length - 1)), 900);
     return () => clearInterval(t);
   }, [scanning]);
+
+  // A link sent from the browser extension ("See the full evidence") starts scanning straight away.
+  useEffect(() => {
+    if (!initialInput || detectKind(initialInput) !== "url") return;
+    const t = setTimeout(() => void submit({ input: initialInput }), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once for the link the page was opened with
+  }, [initialInput]);
 
   function pickFile(f: File | null | undefined) {
     if (!f) return;

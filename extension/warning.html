@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Argus stopped this page</title>
+    <link rel="stylesheet" href="argus.css" />
+    <link rel="stylesheet" href="warning.css" />
+  </head>
+  <body>
+    <main>
+      <svg class="eye" viewBox="-12 -8 24 16" aria-hidden="true">
+        <path d="M-11 0 C-6 -4.8 6 -4.8 11 0 C6 4.8 -6 4.8 -11 0 Z" stroke-width="0.6" />
+        <clipPath id="lid"><path d="M-11 0 C-6 -4.8 6 -4.8 11 0 C6 4.8 -6 4.8 -11 0 Z" /></clipPath>
+        <g clip-path="url(#lid)">
+          <circle class="iris" r="4.3" />
+          <circle class="pupil" r="1.2" />
+        </g>
+      </svg>
+
+      <h1 class="display">Argus stopped this page</h1>
+      <p id="subject" class="mono subject"></p>
+      <p class="line"><span id="pill" class="pill">Checking</span> <span id="threat" class="muted"></span></p>
+
+      <section>
+        <h2 class="muted">Why</h2>
+        <ul id="reasons" class="reasons"></ul>
+      </section>
+
+      <div class="actions">
+        <button id="back" class="primary" type="button">Back to safety</button>
+        <button id="continue" class="quiet" type="button">Continue anyway</button>
+      </div>
+      <p class="muted note">
+        Argus checked this address against live phishing and malware feeds as the page started to load. If you know this
+        site is safe, you can continue; Argus won't warn you about it again until you restart the browser.
+      </p>
+    </main>
+    <script type="module" src="warning.js"></script>
+  </body>
+</html>

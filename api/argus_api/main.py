@@ -9,7 +9,7 @@ from argus_api.checkers.email import check_email
 from argus_api.checkers.file import MAX_FILE_BYTES, check_file
 from argus_api.checkers.phone import Community, normalize, scan_phone
 from argus_api.checkers.text import check_text
-from argus_api.checkers.url import check_url
+from argus_api.checkers.url import check_url, quick_check_url
 from argus_api.detect import detect_kind
 from argus_api.intel import feeds, netcheck
 from argus_api.models import Kind, Verdict
@@ -68,6 +68,13 @@ async def dispatch(kind: Kind, text: str, community: Community) -> Verdict:
 async def scan(req: ScanRequest) -> Verdict:
     kind = req.kind or detect_kind(req.input)
     return await dispatch(kind, req.input, req.community or Community(reports=req.community_reports))
+
+
+@app.post("/scan/quick", response_model=Verdict)
+def scan_quick(req: ScanRequest) -> Verdict:
+    if detect_kind(req.input) != "url":
+        raise HTTPException(status_code=422, detail="Quick checks are for links")
+    return quick_check_url(req.input)
 
 
 @app.post("/scan/file", response_model=Verdict)

@@ -54,6 +54,18 @@ def test_offline_startup_only_uses_cached_feeds(monkeypatch):
     assert recorder.calls == ["cache"]
 
 
+def test_quick_check_answers_from_feeds_and_rules_without_visiting_the_site():
+    r = client.post("/scan/quick", json={"input": "http://paypal-security-alert.net/verify"})
+    body = r.json()
+    assert r.status_code == 200 and body["kind"] == "url" and body["score"] >= 60
+    sources = {s["source"] for s in body["signals"]}
+    assert not sources & {"Domain check (DNS)", "Page content", "Domain age (RDAP)", "VirusTotal"}
+
+
+def test_quick_check_is_only_for_links():
+    assert client.post("/scan/quick", json={"input": "are we still on for lunch?"}).status_code == 422
+
+
 def test_engine_trains_from_bundled_data():
     assert "Safe" in get_engine().classes_
 

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Argus</title>
+    <link rel="stylesheet" href="argus.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <svg class="eye" viewBox="-12 -8 24 16" width="28" height="18" aria-hidden="true">
+        <path d="M-11 0 C-6 -8.6 6 -8.6 11 0 C6 8.6 -6 8.6 -11 0 Z" stroke-width="1.4" />
+        <circle class="iris" r="4.3" />
+        <circle class="pupil" r="1.7" />
+      </svg>
+      <span class="display wordmark">Argus</span>
+    </header>
+
+    <main>
+      <p id="subject" class="mono muted subject"></p>
+      <div class="verdict" aria-live="polite">
+        <p id="score" class="display score">··</p>
+        <div>
+          <p id="label" class="display label">Checking</p>
+          <p id="threat" class="muted threat"></p>
+        </div>
+      </div>
+      <ul id="reasons" class="reasons"></ul>
+      <div class="progress">
+        <div id="scan" class="scanline" data-on="1"></div>
+        <p id="status" class="muted status">Checking live phishing and malware feeds…</p>
+      </div>
+      <a id="evidence" class="evidence" href="#" target="_blank" rel="noreferrer">See the full evidence in Argus</a>
+    </main>
+
+    <form id="check" class="sight">
+      <input id="link" placeholder="Check another link" aria-label="Link to check" autocomplete="off" />
+      <button class="display go" type="submit">Check</button>
+    </form>
+
+    <footer>
+      <label class="toggle"><input id="protect" type="checkbox" /> Warn me before dangerous pages</label>
+      <a href="options.html" target="_blank">Settings</a>
+    </footer>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

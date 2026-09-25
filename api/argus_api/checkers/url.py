@@ -610,6 +610,13 @@ def address_signals(url: str, host: str, after_redirect: bool = False) -> list[S
     return signals + feed_signals(url, host)
 
 
+def quick_check_url(raw: str) -> Verdict:
+    """Instant verdict from the address, the live feeds and site reputation, without visiting the site.
+    Used by the browser extension to warn while a page is still starting to load."""
+    url = normalize_url(raw)
+    return combine("url", url, address_signals(url, host_of(url)))
+
+
 async def check_url(raw: str) -> Verdict:
     url = normalize_url(raw)
     host = host_of(url)
