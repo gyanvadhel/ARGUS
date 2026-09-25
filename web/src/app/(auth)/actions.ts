@@ -1,14 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error?: string } | undefined;
-
-function safeNext(value: FormDataEntryValue | null): string {
-  const next = String(value ?? "");
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
-}
 
 export async function signIn(_: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim();

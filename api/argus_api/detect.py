@@ -13,6 +13,8 @@ def detect_kind(raw: str) -> Kind:
     text = raw.strip()
     if len(_HEADER.findall(text)) >= 2:
         return "email"
+    if _IP_URL.match(text):  # before phones: a dotted quad also looks like a run of digits
+        return "url"
     if _PHONE.match(text) and 7 <= sum(ch.isdigit() for ch in text) <= 15:
         return "phone"
     if _SCHEME.match(text) or _IP_URL.match(text) or _URL.match(text):

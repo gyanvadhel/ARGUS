@@ -110,3 +110,12 @@ async def test_check_url_survives_failures():
     assert statuses["URLhaus"] == "unavailable"
     assert statuses["Domain age (RDAP)"] == "error"
     assert v.score >= 60
+
+
+async def test_virustotal_rate_limit_is_not_an_outage(monkeypatch):
+    monkeypatch.setenv("VIRUSTOTAL_API_KEY", "k")
+    with respx.mock:
+        respx.get(url__startswith="https://www.virustotal.com/api/v3/urls/").respond(429, json={"error": {}})
+        async with make_client() as c:
+            s = await u.virustotal_url(c, "http://x.example")
+    assert s.status == "unavailable" and "rate limit" in s.summary.lower()

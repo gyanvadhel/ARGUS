@@ -9,7 +9,10 @@ async function call<T>(path: string, init?: RequestInit, timeoutMs = 25000): Pro
   let res: Response;
   try {
     res = await fetch(BASE + path, { ...init, cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
-  } catch {
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "TimeoutError") {
+      throw new Error("The scan took too long to finish. Please try again.");
+    }
     throw new ApiOfflineError("The ARGUS scanning engine is offline. Start it with dev.ps1.");
   }
   if (!res.ok) {

@@ -35,3 +35,16 @@ async def test_links_inside_messages_are_scanned():
 def test_intel_hit_on_known_scam_number():
     s = intel_signal("please call 1-800-555-0142 right away")
     assert s.status == "malicious"
+
+
+async def test_phone_numbers_inside_messages_are_checked():
+    v = await check_text("Your parcel is held. Call 1 800 555 0142 now to release it.")
+    phone = next(s for s in v.signals if s.source == "Phone: +18005550142")
+    assert phone.status == "malicious"
+    assert v.level == "HIGH RISK"
+
+
+async def test_links_on_the_same_host_are_checked_once():
+    with respx.mock:
+        v = await check_text("See http://evil.xyz/a and also http://evil.xyz/b")
+    assert [s.source for s in v.signals].count("Link: evil.xyz") == 1

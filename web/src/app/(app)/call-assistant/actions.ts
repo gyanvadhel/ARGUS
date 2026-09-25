@@ -7,7 +7,16 @@ import type { CallTurn, CallTurnResponse, Verdict } from "@/lib/types";
 
 type Fail = { ok: false; error: string };
 
+const SESSION_EXPIRED: Fail = { ok: false, error: "Your session expired. Please sign in again." };
+
+async function signedIn(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return !!user;
+}
+
 export async function screenCaller(callerId: string): Promise<{ ok: true; blocked: boolean; verdict: Verdict | null } | Fail> {
+  if (!(await signedIn())) return SESSION_EXPIRED;
   const id = callerId.trim();
   if (!id) return { ok: true, blocked: false, verdict: null };
   try {
@@ -20,6 +29,7 @@ export async function screenCaller(callerId: string): Promise<{ ok: true; blocke
 }
 
 export async function callTurn(transcript: CallTurn[]): Promise<({ ok: true } & CallTurnResponse) | Fail> {
+  if (!(await signedIn())) return SESSION_EXPIRED;
   try {
     return { ok: true, ...(await api.callTurn(transcript)) };
   } catch (e) {
@@ -30,7 +40,7 @@ export async function callTurn(transcript: CallTurn[]): Promise<({ ok: true } & 
 export async function saveCall(callerId: string, analysis: Verdict): Promise<{ ok: true; id: string } | Fail> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Your session expired. Please sign in again." };
+  if (!user) return SESSION_EXPIRED;
   const { data, error } = await supabase
     .from("scans")
     .insert({

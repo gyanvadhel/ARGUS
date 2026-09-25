@@ -9,7 +9,7 @@ from email.parser import Parser
 from email.utils import parseaddr
 
 from argus_api.aggregate import combine, verdict_as_signal
-from argus_api.checkers.text import extract_urls, ml_signal, rules_signal
+from argus_api.checkers.text import extract_urls, ml_signal, phone_signals, rules_signal, unique_hosts
 from argus_api.checkers.url import BRAND_DOMAINS, brand_name, check_url, host_of
 from argus_api.models import Signal, Verdict
 
@@ -104,8 +104,8 @@ async def check_email(raw: str) -> Verdict:
     msg = Parser(policy=policy.default).parsestr(raw.strip())
     body, links = extract_body(msg)
     text = body or raw
-    signals = [header_signal(msg), ml_signal(text), rules_signal(text)]
-    urls = list(dict.fromkeys(links + extract_urls(text)))[:3]
+    signals = [header_signal(msg), ml_signal(text), rules_signal(text), *phone_signals(text)]
+    urls = unique_hosts(links + extract_urls(text))[:3]
     if urls:
         verdicts = await asyncio.gather(*(check_url(u) for u in urls))
         signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]

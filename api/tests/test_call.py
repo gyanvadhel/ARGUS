@@ -42,3 +42,27 @@ def test_llm_used_when_available(monkeypatch):
 def test_messages_start_with_the_caller_and_merge_turns():
     turns = req("hello", "it's about your account").transcript
     assert call.to_messages(turns) == [{"role": "user", "content": "hello\nit's about your account"}]
+
+
+def test_llm_call_is_fast_failing_and_uses_fallbacks(monkeypatch):
+    import sys
+    import types
+
+    seen = {}
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            seen["request"] = kwargs
+            block = types.SimpleNamespace(type="text", text="Who is calling?")
+            return types.SimpleNamespace(stop_reason="end_turn", content=[block])
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            seen["client"] = kwargs
+            self.beta = types.SimpleNamespace(messages=FakeMessages())
+
+    monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeClient))
+    turns = req("hello").transcript
+    assert call.llm_reply(turns, analyze_call(turns), "k") == "Who is calling?"
+    assert seen["client"]["timeout"] <= 10 and seen["client"]["max_retries"] == 0
+    assert seen["request"]["fallbacks"] == "default"

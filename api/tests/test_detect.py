@@ -10,6 +10,8 @@ from argus_api.detect import detect_kind
     "http://192.168.1.10:8080/admin",
     "http://paypal.com@evil.example/x",
     "   https://x.com   ",
+    "185.220.101.45",
+    "192.168.1.10",
 ])
 def test_urls(raw):
     assert detect_kind(raw) == "url"

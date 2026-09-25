@@ -9,7 +9,7 @@ import httpx
 from argus_api import config
 from argus_api.aggregate import combine
 from argus_api.checkers.text import ml_signal
-from argus_api.checkers.vt import VT_BASE, vt_stats_signal
+from argus_api.checkers.vt import VT_BASE, vt_rate_limited, vt_stats_signal
 from argus_api.http import guarded, make_client, unavailable
 from argus_api.models import Signal, Verdict
 
@@ -84,6 +84,8 @@ async def virustotal_file(client: httpx.AsyncClient, sha256: str) -> Signal:
     if not key:
         return unavailable("VirusTotal", "VIRUSTOTAL_API_KEY")
     r = await client.get(f"{VT_BASE}/files/{sha256}", headers={"x-apikey": key})
+    if r.status_code == 429:
+        return vt_rate_limited()
     if r.status_code == 404:
         return Signal(source="VirusTotal", status="unknown", score=0, weight=0, summary="VirusTotal has never seen this file")
     r.raise_for_status()

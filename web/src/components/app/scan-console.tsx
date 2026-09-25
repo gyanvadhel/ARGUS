@@ -80,13 +80,18 @@ export function ScanConsole() {
     setStage(0);
     setScanning(true);
     setResult(null);
-    const res = await runScan(form);
-    setScanning(false);
-    if (!res.ok) {
-      toast.error(res.error);
-      return;
+    try {
+      const res = await runScan(form);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      setResult(res);
+    } catch {
+      toast.error("The scan couldn't finish. Refresh the page and try again.");
+    } finally {
+      setScanning(false);
     }
-    setResult(res);
   }
 
   function runSample(s: (typeof SAMPLES)[number]) {

@@ -100,7 +100,7 @@ def llm_reply(transcript: list[Turn], analysis: Verdict, api_key: str) -> str:
     if not messages or messages[-1]["role"] != "user":
         raise ValueError("The last turn must come from the caller")
 
-    client = anthropic.Anthropic(api_key=api_key, timeout=20.0, max_retries=1)
+    client = anthropic.Anthropic(api_key=api_key, timeout=8.0, max_retries=0)
     response = client.beta.messages.create(
         model=CALL_MODEL,
         max_tokens=2048,

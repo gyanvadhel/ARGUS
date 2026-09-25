@@ -3,6 +3,11 @@ from argus_api.models import Signal
 VT_BASE = "https://www.virustotal.com/api/v3"
 
 
+def vt_rate_limited() -> Signal:
+    return Signal(source="VirusTotal", status="unavailable", score=0, weight=0,
+                  summary="VirusTotal rate limit reached (free tier allows 4 lookups a minute). Try again shortly")
+
+
 def vt_stats_signal(source: str, stats: dict, noun: str, extra: dict | None = None) -> Signal:
     malicious = int(stats.get("malicious", 0))
     suspicious = int(stats.get("suspicious", 0))

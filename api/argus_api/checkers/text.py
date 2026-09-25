@@ -5,6 +5,7 @@ import asyncio
 import re
 
 from argus_api.aggregate import combine, verdict_as_signal
+from argus_api.checkers.phone import blocklist_signal, normalize
 from argus_api.checkers.url import check_url, host_of
 from argus_api.models import Signal, Verdict
 from argus_api.risk_engine import THREAT_TYPE_BY_LABEL, get_engine
@@ -15,6 +16,37 @@ _BARE_DOMAIN = re.compile(
     r"(?:/[^\s<>\"')]*)?",
     re.I,
 )
+
+
+_PHONE_IN_TEXT = re.compile(r"(?<![\w.])\+?\d[\d\s\-()]{6,18}\d(?![\w.])")
+
+
+def extract_phones(text: str, limit: int = 2) -> list[str]:
+    """E.164 numbers found in free text (10-15 digits, so dates and short codes are skipped)."""
+    found: list[str] = []
+    for match in _PHONE_IN_TEXT.findall(text):
+        if not 10 <= sum(ch.isdigit() for ch in match) <= 15:
+            continue
+        e164 = normalize(match)
+        if e164 and e164 not in found:
+            found.append(e164)
+    return found[:limit]
+
+
+def phone_signals(text: str) -> list[Signal]:
+    return [blocklist_signal(n).model_copy(update={"source": f"Phone: {n}"}) for n in extract_phones(text)]
+
+
+def unique_hosts(urls: list[str]) -> list[str]:
+    """Keep the first URL per host so one site never produces two identical evidence cards."""
+    seen: set[str] = set()
+    kept = []
+    for url in urls:
+        host = host_of(url)
+        if host not in seen:
+            seen.add(host)
+            kept.append(url)
+    return kept
 
 
 def extract_urls(text: str, limit: int = 3) -> list[str]:
@@ -88,8 +120,8 @@ def local_text_signals(text: str) -> list[Signal]:
 
 
 async def check_text(text: str) -> Verdict:
-    signals = local_text_signals(text)
-    urls = extract_urls(text)
+    signals = local_text_signals(text) + phone_signals(text)
+    urls = unique_hosts(extract_urls(text))
     if urls:
         verdicts = await asyncio.gather(*(check_url(u) for u in urls))
         signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]

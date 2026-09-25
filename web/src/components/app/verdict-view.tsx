@@ -53,7 +53,7 @@ export function VerdictView({ verdict, actions }: { verdict: Verdict; actions?: 
           <p className="text-sm text-muted-foreground">{answered} of {signals.length} sources answered</p>
         </div>
         <div ref={gridRef} className="grid gap-3 xl:grid-cols-2">
-          {signals.map((s) => <SignalCard key={s.source} signal={s} />)}
+          {signals.map((s, i) => <SignalCard key={`${i}-${s.source}`} signal={s} />)}
         </div>
       </section>
     </div>
