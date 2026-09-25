@@ -6,13 +6,17 @@ export type SignupOutcome =
   | { kind: "already-registered" }
   | { kind: "error"; message: string };
 
-/** What signing up led to. Supabase answers an email that already has an account with a
- *  look-alike success that has no identities, so the address isn't revealed to strangers. */
+/** What signing up led to. For an email that already has an account, Supabase answers with a look-alike
+ *  success that has no identities while email confirmation is on, and with an error while it's off. */
 export function signupOutcome(
   result: { session: unknown; identities: unknown[] | null | undefined; error: { message: string } | null },
   email: string,
 ): SignupOutcome {
-  if (result.error) return { kind: "error", message: result.error.message };
+  if (result.error) {
+    return /already registered|already exists/i.test(result.error.message)
+      ? { kind: "already-registered" }
+      : { kind: "error", message: result.error.message };
+  }
   if (Array.isArray(result.identities) && result.identities.length === 0) return { kind: "already-registered" };
   if (result.session) return { kind: "signed-in" };
   return { kind: "check-email", email };

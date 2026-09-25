@@ -14,6 +14,12 @@ describe("signupOutcome", () => {
     expect(signupOutcome({ session: null, identities: [], error: null }, "a@b.co")).toEqual({ kind: "already-registered" });
   });
 
+  it("spots an existing account when email confirmation is off (Supabase answers with an error)", () => {
+    expect(signupOutcome({ session: null, identities: null, error: { message: "User already registered" } }, "a@b.co")).toEqual({
+      kind: "already-registered",
+    });
+  });
+
   it("passes errors through", () => {
     expect(signupOutcome({ session: null, identities: null, error: { message: "Password is too weak" } }, "a@b.co")).toEqual({
       kind: "error",
