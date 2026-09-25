@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from argus_api import config
 from argus_api.checkers.text import check_text
+from argus_api.checkers.url import check_url
 from argus_api.detect import detect_kind
 from argus_api.models import Kind, Verdict
 
@@ -36,6 +37,8 @@ def health() -> dict:
 
 
 async def dispatch(kind: Kind, text: str, community_reports: int) -> Verdict:
+    if kind == "url":
+        return await check_url(text)
     return await check_text(text)
 
 

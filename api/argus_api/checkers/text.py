@@ -1,9 +1,11 @@
 """Message analysis: ARGUS ML + scam-phrase rules + local threat intel."""
 from __future__ import annotations
 
+import asyncio
 import re
 
-from argus_api.aggregate import combine
+from argus_api.aggregate import combine, verdict_as_signal
+from argus_api.checkers.url import check_url, host_of
 from argus_api.models import Signal, Verdict
 from argus_api.risk_engine import THREAT_TYPE_BY_LABEL, get_engine
 
@@ -86,4 +88,9 @@ def local_text_signals(text: str) -> list[Signal]:
 
 
 async def check_text(text: str) -> Verdict:
-    return combine("text", text[:120], local_text_signals(text))
+    signals = local_text_signals(text)
+    urls = extract_urls(text)
+    if urls:
+        verdicts = await asyncio.gather(*(check_url(u) for u in urls))
+        signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
+    return combine("text", text[:120], signals)

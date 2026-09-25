@@ -1,3 +1,5 @@
+import respx
+
 from argus_api.checkers.text import check_text, extract_urls, intel_signal
 
 
@@ -22,6 +24,12 @@ async def test_scam_text_scores_high():
 async def test_benign_text_is_safe():
     v = await check_text("Hey are we still on for lunch tomorrow at noon?")
     assert v.level == "SAFE"
+
+
+async def test_links_inside_messages_are_scanned():
+    with respx.mock:  # every outbound call is unmocked -> error signals, no real network
+        v = await check_text("Verify now at http://paypal-security-alert.net/verify")
+    assert any(s.source == "Link: paypal-security-alert.net" for s in v.signals)
 
 
 def test_intel_hit_on_known_scam_number():
