@@ -53,9 +53,12 @@ function EvidenceList({ evidence }: { evidence: Record<string, unknown> }) {
   return <ul className="mt-3 space-y-1.5 border-t border-border/60 pt-3 text-xs leading-relaxed text-muted-foreground">{items}</ul>;
 }
 
+const VOUCHES = { label: "Vouches", color: "var(--risk-safe)" };
+
 export function SignalCard({ signal, visible = false }: { signal: Signal; visible?: boolean }) {
   const [open, setOpen] = useState(false);
-  const meta = STATUS_META[signal.status];
+  // A clean result that is also positive evidence (a top site, an official brand domain) vouches for the subject.
+  const meta = signal.status === "clean" && (signal.trust ?? 0) > 0 ? VOUCHES : STATUS_META[signal.status];
   const muted = ["unknown", "unavailable", "error"].includes(signal.status);
   const hasDetails = Object.keys(signal.evidence).some((k) => k !== "threat_type" && k !== "subject");
   return (

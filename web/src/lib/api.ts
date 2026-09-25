@@ -1,5 +1,5 @@
 import "server-only";
-import type { Community, ScanKind, Verdict } from "./types";
+import type { Community, FeedStatus, ScanKind, Verdict } from "./types";
 
 const BASE = process.env.ARGUS_API_URL ?? "http://127.0.0.1:8000";
 
@@ -39,5 +39,6 @@ export const api = {
   },
   normalizePhone: (number: string) =>
     call<{ e164: string | null }>(`/phone/normalize?number=${encodeURIComponent(number)}`, undefined, 5000),
-  health: () => call<{ status: string; sources: Record<string, boolean> }>("/health", undefined, 3000),
+  health: () =>
+    call<{ status: string; sources: Record<string, boolean>; feeds?: Record<string, FeedStatus> }>("/health", undefined, 3000),
 };

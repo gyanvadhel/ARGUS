@@ -2,14 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import { animate, stagger } from "animejs";
-import { KIND_META, LEVEL_META, STATUS_ORDER } from "@/lib/format";
+import { KIND_META, levelMeta, STATUS_ORDER } from "@/lib/format";
 import type { Verdict } from "@/lib/types";
 import { ScoreDial } from "./score-dial";
 import { SignalCard } from "./signal-card";
 
 export function VerdictView({ verdict, actions }: { verdict: Verdict; actions?: React.ReactNode }) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const meta = LEVEL_META[verdict.level] ?? LEVEL_META.UNVERIFIED;
+  const meta = levelMeta(verdict.level, verdict.verified);
   const Kind = KIND_META[verdict.kind];
   const signals = [...verdict.signals].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
   const answered = signals.filter((s) => !["unavailable", "error"].includes(s.status)).length;
@@ -38,7 +38,11 @@ export function VerdictView({ verdict, actions }: { verdict: Verdict; actions?: 
         <ScoreDial score={verdict.score} color={meta.color} />
         <p className="relative mt-5 font-serif text-5xl" style={{ color: meta.color }}>{meta.label}</p>
         <p className="relative mt-1 text-sm text-muted-foreground">
-          {verdict.threat_type !== "None" ? verdict.threat_type : "No threat detected"}
+          {verdict.threat_type !== "None"
+            ? verdict.threat_type
+            : verdict.verified
+              ? "Positive evidence it's legitimate"
+              : "Nothing suspicious found"}
         </p>
         <div className="relative mt-6 flex max-w-full items-center gap-2 rounded-full border border-border/70 px-3 py-1.5">
           <Kind.icon className="size-3.5 shrink-0 text-muted-foreground" />

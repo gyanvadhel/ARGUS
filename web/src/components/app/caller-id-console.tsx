@@ -8,7 +8,7 @@ import { reportNumber } from "@/app/(app)/scan/actions";
 import { WatchingEye } from "@/components/eye/watching-eye";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { callerVerdict, LEVEL_META, STATUS_ORDER, timeAgo } from "@/lib/format";
+import { callerVerdict, levelMeta, STATUS_ORDER, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { IncomingCall } from "./incoming-call";
 import { SignalCard } from "./signal-card";
@@ -19,13 +19,14 @@ const SAMPLES = [
   { label: "Known scam line", value: "1-800-555-0142" },
   { label: "One-ring trap", value: "+232 76 123456" },
   { label: "Look-alike area code", value: "+1 876 203 4567" },
+  { label: "Faked caller ID", value: "+999 123 4567" },
   { label: "Ordinary number", value: "+1 650-253-0000" },
 ];
 const CATEGORIES = ["Scam", "Spam", "Robocall", "Fraud", "Other"];
 
 function IdentityCard({ found, onSimulate }: { found: Found; onSimulate: () => void }) {
   const { verdict, community, recent } = found;
-  const tone = verdict.level === "UNVERIFIED" ? "var(--risk-unknown)" : LEVEL_META[verdict.level].color;
+  const tone = levelMeta(verdict.level, verdict.verified).color;
   const info = verdict.signals.find((s) => s.source === "Number validation")?.evidence ?? {};
   const max = Math.max(1, ...CATEGORIES.map((c) => community.categories[c] ?? 0));
   return (
@@ -34,7 +35,7 @@ function IdentityCard({ found, onSimulate }: { found: Found; onSimulate: () => v
         <div>
           <p className="text-sm text-muted-foreground">Verdict</p>
           <p className="font-display mt-2 text-5xl sm:text-6xl" style={{ color: tone }}>
-            {callerVerdict(verdict.score, verdict.level)}
+            {callerVerdict(verdict.score, verdict.level, verdict.verified)}
           </p>
         </div>
         <p className="font-display text-6xl tabular-nums" style={{ color: tone }} aria-label={`Risk ${verdict.score} out of 100`}>
@@ -242,7 +243,14 @@ export function CallerIdConsole({ contacts }: { contacts: number }) {
                 ))}
               </div>
             </section>
-            <ReportForm e164={found.verdict.subject} onDone={() => lookup(found.verdict.subject)} />
+            {found.reportable ? (
+              <ReportForm e164={found.verdict.subject} onDone={() => lookup(found.verdict.subject)} />
+            ) : (
+              <p className="rounded-[2rem] border border-dashed border-border/70 p-6 text-sm text-muted-foreground">
+                This number can&apos;t exist, so there&apos;s nothing to report or tag. If it showed up on your screen, the caller
+                faked it.
+              </p>
+            )}
           </div>
         </div>
       ) : (
@@ -260,8 +268,10 @@ export function CallerIdConsole({ contacts }: { contacts: number }) {
           verdict={found.verdict}
           community={found.community}
           contacts={contacts}
+          reportable={found.reportable}
           onClose={() => setCalling(false)}
           onBlock={async () => {
+            if (!found.reportable) return; // a faked number can be blocked on the phone, but there's no real line to report
             const top = Object.entries(found.community.categories).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "Scam";
             const res = await reportNumber(found.verdict.subject, top, "Blocked from an incoming call", "");
             if (!res.ok && !res.error.includes("already")) toast.error(res.error);

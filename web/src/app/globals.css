@@ -33,6 +33,7 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --color-risk-safe: var(--risk-safe);
+  --color-risk-clear: var(--risk-clear);
   --color-risk-low: var(--risk-low);
   --color-risk-sus: var(--risk-sus);
   --color-risk-high: var(--risk-high);
@@ -82,6 +83,8 @@
   --aurora-2: #a66bff;
   --aurora-3: #ff8a7a;
   --risk-safe: #5ed3b0;
+  /* "No red flags": calmer than a verified "Safe", because nothing vouched for it */
+  --risk-clear: #9cb8b0;
   --risk-low: #f5c451;
   --risk-sus: #ff9f4d;
   --risk-high: #ff5d6c;
@@ -194,7 +197,56 @@
   r: 2.5px;
 }
 
-/* Custom cursor on the landing page only (fine pointers). */
+/* Hero field: you write on a single line of sight. */
+.sight-rule,
+.sight-draw,
+.sight-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+}
+.sight-rule {
+  background: rgb(236 230 220 / 0.22);
+}
+.sight-draw {
+  background: var(--foreground);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sight:focus-within .sight-draw {
+  transform: scaleX(1);
+}
+.sight-scan {
+  height: 2px;
+  bottom: -0.5px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--foreground) 40%, #fff 50%, var(--foreground) 60%, transparent) no-repeat;
+  background-size: 30% 100%;
+  transition: opacity 200ms ease;
+}
+[data-busy="1"] .sight-scan {
+  opacity: 1;
+  animation: sight-scan 1.15s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes sight-scan {
+  from { background-position: -45% 0; }
+  to { background-position: 145% 0; }
+}
+.sight-go {
+  font-stretch: 62%;
+  line-height: 0.8;
+  transition: font-stretch 460ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease;
+}
+.sight-go:not(:disabled):hover,
+.sight-go:focus-visible {
+  font-stretch: 100%;
+}
+
+/* Custom cursor on the landing page only (fine pointers): a small eye that locks onto what you can click. */
 .has-cursor,
 .has-cursor * {
   cursor: none !important;
@@ -203,34 +255,43 @@
 .has-cursor textarea {
   cursor: text !important;
 }
-.cursor-dot,
-.cursor-ring {
+.cursor-eye,
+.cursor-lock {
   position: fixed;
   left: 0;
   top: 0;
   z-index: 80;
   pointer-events: none;
-  border-radius: 9999px;
   mix-blend-mode: difference;
+  color: #ece6dc;
 }
-.cursor-dot {
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  background: #ece6dc;
+.cursor-eye {
+  width: 26px;
+  height: 18px;
+  margin: -9px 0 0 -13px;
+  transition: opacity 180ms ease, scale 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.cursor-ring {
-  width: 38px;
-  height: 38px;
-  margin: -19px 0 0 -19px;
-  border: 1px solid #ece6dc;
-  transition: width 240ms ease, height 240ms ease, margin 240ms ease;
+.cursor-eye[data-hidden="1"] {
+  opacity: 0;
+  scale: 0.4;
 }
-.cursor-ring[data-hover="1"] {
-  width: 64px;
-  height: 64px;
-  margin: -32px 0 0 -32px;
+.cursor-lock {
+  opacity: 0;
+  transition: opacity 180ms ease;
 }
+.cursor-lock[data-on="1"] {
+  opacity: 1;
+}
+.cursor-lock > i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 0 solid currentColor;
+}
+.cursor-lock > i:nth-child(1) { left: 0; top: 0; border-left-width: 1.5px; border-top-width: 1.5px; }
+.cursor-lock > i:nth-child(2) { right: 0; top: 0; border-right-width: 1.5px; border-top-width: 1.5px; }
+.cursor-lock > i:nth-child(3) { left: 0; bottom: 0; border-left-width: 1.5px; border-bottom-width: 1.5px; }
+.cursor-lock > i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1.5px; border-bottom-width: 1.5px; }
 
 @media (prefers-reduced-motion: reduce) {
   *,

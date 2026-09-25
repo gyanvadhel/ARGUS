@@ -9,6 +9,8 @@ export interface Signal {
   weight: number;
   summary: string;
   authoritative: boolean;
+  /** Positive evidence that the thing is legitimate, 0..1 (e.g. one of the world's most visited sites). */
+  trust?: number;
   evidence: Record<string, unknown>;
 }
 
@@ -21,6 +23,8 @@ export interface Verdict {
   signals: Signal[];
   recommendation: string;
   scanned_at: string;
+  /** True only when positive evidence confirms it's safe, not merely "nothing found". Missing on older scans. */
+  verified?: boolean;
 }
 
 export interface ScanRow {
@@ -32,6 +36,15 @@ export interface ScanRow {
   threat_type: string;
   verdict: Verdict;
   created_at: string;
+}
+
+/** One live threat feed as reported by the engine's /health. */
+export interface FeedStatus {
+  label: string;
+  count: number;
+  /** Unix seconds of the last successful download; null until the first one lands. */
+  fetched_at: number | null;
+  error: string | null;
 }
 
 /** What ARGUS users collectively know about a phone number. */

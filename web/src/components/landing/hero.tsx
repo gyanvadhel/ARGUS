@@ -1,21 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { previewScan, type PreviewResult } from "@/app/preview-actions";
 import { LevelPill } from "@/components/app/level-pill";
 import { Eye, type EyeMood } from "@/components/eye/eye";
-import { Magnetic } from "@/components/fx/magnetic";
+import { WatchingEye } from "@/components/eye/watching-eye";
 import { ReactiveWord } from "@/components/fx/reactive-word";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { detectKind } from "@/lib/detect";
+import type { ScanKind } from "@/lib/types";
 
 const SAMPLES = [
   { label: "a phishing link", value: "http://paypal-security-alert.net/verify-account" },
   { label: "a scam text", value: "URGENT: your bank account is suspended. Verify your identity within 24 hours at bit.ly/secure-verify or you will be arrested." },
-  { label: "a scam number", value: "1-800-555-0142" },
+  { label: "a fake number", value: "+999 123 4567" },
 ];
+
+const READS_AS: Record<ScanKind, string> = {
+  url: "a link",
+  phone: "a phone number",
+  email: "an email",
+  text: "a message",
+  file: "a file",
+  call: "a call",
+};
 
 function smooth(a: number, b: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -25,13 +33,15 @@ function smooth(a: number, b: number, x: number) {
 function PreviewLine({ result }: { result: PreviewResult }) {
   if (!result.ok) return <span className="text-risk-high">{result.error}</span>;
   return (
-    <>
-      <LevelPill level={result.level} score={result.score} />
-      <span className="text-foreground/75">{result.threat !== "None" ? result.threat : "Nothing suspicious found"}</span>
-      <Link href="/signup" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">
+    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <LevelPill level={result.level} score={result.score} verified={result.verified} />
+      <span className="text-foreground/75">
+        {result.threat !== "None" ? result.threat : result.verified ? "Positive evidence it's legitimate" : "Nothing suspicious found"}
+      </span>
+      <Link href="/signup" className="text-muted-foreground underline decoration-foreground/25 underline-offset-4 hover:text-foreground">
         See the full evidence
       </Link>
-    </>
+    </span>
   );
 }
 
@@ -45,6 +55,7 @@ export function Hero() {
   const [focused, setFocused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PreviewResult | null>(null);
+  const kind = detectKind(value);
 
   // Scroll drives the dive into the pupil: copy fades, the camera pushes in, then black.
   useEffect(() => {
@@ -74,7 +85,7 @@ export function Hero() {
     const el = field.current;
     if (!focused || !el) return null;
     const r = el.getBoundingClientRect();
-    return { x: r.left + Math.min(r.width - 30, 20 + value.length * 8.5), y: r.top + r.height / 2 };
+    return { x: r.left + Math.min(r.width - 30, 12 + value.length * 10.5), y: r.top + r.height / 2 };
   }, [focused, value]);
 
   async function run(text: string) {
@@ -99,7 +110,7 @@ export function Hero() {
   return (
     <section ref={section} className="relative h-[210vh]" aria-label="Argus">
       <div className="sticky top-0 h-dvh overflow-hidden">
-        <Eye mood={mood} dive={dive} target={target} distance={6.2} offsetY={0.42} className="absolute inset-0" />
+        <Eye mood={mood} dive={dive} target={target} distance={6.8} offsetY={0.6} className="absolute inset-0" />
 
         <div ref={overlay} className="absolute inset-0 flex flex-col justify-between px-6 pt-28 sm:px-10">
           <div className="mx-auto flex w-full max-w-[1600px] items-start justify-between gap-10">
@@ -118,49 +129,65 @@ export function Hero() {
           </div>
 
           <div>
+            {/* The line of sight: you write on a single hairline the eye is watching. */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 void run(value);
               }}
-              className="mx-auto w-full max-w-2xl"
+              data-busy={busy ? "1" : "0"}
+              aria-busy={busy}
+              className="mx-auto w-full max-w-3xl"
             >
-              <div className="flex items-center gap-2 rounded-full border border-border bg-background/75 p-1.5 pl-5 backdrop-blur-md transition-colors focus-within:border-foreground/40">
+              <div className="sight relative flex items-end gap-4 pb-2.5">
+                <WatchingEye className="mb-3.5 h-4 w-7 shrink-0" strokeWidth={1.3} />
                 <input
                   ref={field}
                   value={value}
-                  onChange={(e) => setValue(e.target.value)}
+                  onChange={(e) => {
+                    setValue(e.target.value);
+                    if (result) setResult(null);
+                  }}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  placeholder="Paste a suspicious link, message or phone number"
+                  placeholder="Paste a link, a message or a phone number"
                   aria-label="Something to check"
-                  className="h-11 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+                  className="h-12 min-w-0 flex-1 bg-transparent text-[clamp(1.05rem,1.5vw,1.35rem)] outline-none placeholder:text-muted-foreground/80"
                 />
-                <Magnetic strength={0.18}>
-                  <button type="submit" disabled={busy} className={cn(buttonVariants(), "h-11 min-w-28 rounded-full px-6 text-sm")}>
-                    {busy ? <Loader2 className="size-4 animate-spin" /> : "Check it"}
-                  </button>
-                </Magnetic>
+                <button type="submit" disabled={busy} className="font-display sight-go shrink-0 pb-1.5 text-[2.35rem] disabled:opacity-50">
+                  Check
+                </button>
+                <span className="sight-rule" aria-hidden />
+                <span className="sight-draw" aria-hidden />
+                <span className="sight-scan" aria-hidden />
               </div>
-              <div className="mt-3 flex min-h-8 flex-wrap items-center justify-center gap-2 text-sm" aria-live="polite">
+              <div className="mt-3 flex min-h-7 flex-wrap items-center justify-between gap-x-8 gap-y-2 text-sm" aria-live="polite">
                 {result ? (
                   <PreviewLine result={result} />
                 ) : (
                   <>
-                    <span className="text-muted-foreground">Try</span>
-                    {SAMPLES.map((s) => (
-                      <button
-                        key={s.label}
-                        type="button"
-                        onClick={() => {
-                          setValue(s.value);
-                          void run(s.value);
-                        }}
-                        className="rounded-full border border-border px-3 py-1 text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
-                      >
-                        {s.label}
-                      </button>
-                    ))}
+                    <span className="text-muted-foreground">
+                      {busy ? "Checking live threat feeds and the page itself" : kind ? `Reads as ${READS_AS[kind]}` : "Links, texts, emails or phone numbers"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      Try{" "}
+                      {SAMPLES.map((s, i) => (
+                        <Fragment key={s.label}>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setValue(s.value);
+                              void run(s.value);
+                            }}
+                            className="text-foreground/80 underline decoration-foreground/25 underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground disabled:opacity-50"
+                          >
+                            {s.label}
+                          </button>
+                          {i < SAMPLES.length - 2 ? ", " : i === SAMPLES.length - 2 ? " or " : ""}
+                        </Fragment>
+                      ))}
+                    </span>
                   </>
                 )}
               </div>

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const FILTERS: (ScanKind | "all")[] = ["all", "url", "file", "email", "phone", "text", "call"];
 
-type Row = Pick<ScanRow, "id" | "kind" | "input_preview" | "score" | "level" | "threat_type" | "created_at">;
+type Row = Pick<ScanRow, "id" | "kind" | "input_preview" | "score" | "level" | "threat_type" | "created_at"> & { verified: boolean | null };
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams;
@@ -17,7 +17,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   const supabase = await createClient();
   let query = supabase
     .from("scans")
-    .select("id,kind,input_preview,score,level,threat_type,created_at")
+    .select("id,kind,input_preview,score,level,threat_type,created_at,verified:verdict->verified")
     .order("created_at", { ascending: false })
     .limit(200);
   if (active !== "all") query = query.eq("kind", active);
@@ -64,7 +64,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
                     <Link href={`/scan/${r.id}`} className="block truncate hover:underline">{r.input_preview.split("\n")[0]}</Link>
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">{r.threat_type}</TableCell>
-                  <TableCell><LevelPill level={r.level} score={r.score} /></TableCell>
+                  <TableCell><LevelPill level={r.level} score={r.score} verified={r.verified === true} /></TableCell>
                   <TableCell className="hidden pr-5 text-right text-xs text-muted-foreground sm:table-cell">{timeAgo(r.created_at)}</TableCell>
                 </TableRow>
               );

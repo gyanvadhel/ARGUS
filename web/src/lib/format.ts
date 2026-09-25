@@ -9,12 +9,20 @@ export const LEVEL_META: Record<RiskLevel, { label: string; color: string }> = {
   UNVERIFIED: { label: "Unverified", color: "var(--risk-unknown)" },
 };
 
+const NO_RED_FLAGS = { label: "No red flags", color: "var(--risk-clear)" };
+
+/** "Safe" needs positive evidence (e.g. one of the world's most visited sites); otherwise it's only "no red flags". */
+export function levelMeta(level: RiskLevel, verified?: boolean): { label: string; color: string } {
+  if (level === "SAFE" && !verified) return NO_RED_FLAGS;
+  return LEVEL_META[level] ?? LEVEL_META.UNVERIFIED;
+}
+
 export const STATUS_META: Record<SignalStatus, { label: string; color: string }> = {
   malicious: { label: "Malicious", color: "var(--risk-high)" },
   suspicious: { label: "Suspicious", color: "var(--risk-sus)" },
   clean: { label: "Clean", color: "var(--risk-safe)" },
-  unknown: { label: "No record", color: "var(--risk-unknown)" },
-  unavailable: { label: "Not configured", color: "var(--risk-unknown)" },
+  unknown: { label: "Inconclusive", color: "var(--risk-unknown)" },
+  unavailable: { label: "Unavailable", color: "var(--risk-unknown)" },
   error: { label: "Unreachable", color: "var(--risk-unknown)" },
 };
 
@@ -47,10 +55,10 @@ export function timeAgo(iso: string, now = Date.now()): string {
 }
 
 /** The one-line Caller ID verdict shown on the identity card and the incoming-call screen. */
-export function callerVerdict(score: number, level: RiskLevel): string {
+export function callerVerdict(score: number, level: RiskLevel, verified?: boolean): string {
   if (level === "UNVERIFIED") return "No verdict";
   if (score >= 80) return "Likely scam";
   if (score >= 60) return "Suspicious";
   if (score >= 30) return "Be careful";
-  return "Looks safe";
+  return verified ? "Looks safe" : "No red flags";
 }

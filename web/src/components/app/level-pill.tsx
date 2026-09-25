@@ -1,8 +1,8 @@
-import { LEVEL_META } from "@/lib/format";
+import { levelMeta } from "@/lib/format";
 import type { RiskLevel } from "@/lib/types";
 
-export function LevelPill({ level, score }: { level: RiskLevel; score?: number }) {
-  const { label, color } = LEVEL_META[level] ?? LEVEL_META.UNVERIFIED;
+export function LevelPill({ level, score, verified }: { level: RiskLevel; score?: number; verified?: boolean }) {
+  const { label, color } = levelMeta(level, verified);
   return (
     <span
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium"

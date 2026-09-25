@@ -33,11 +33,11 @@ const IRIS_EDGE = 0.6; // angular radius of the iris on the eyeball, radians
 
 // lid: opening angle in radians · pupil: angular radius · spin: iris ring speed
 const MOODS: Record<EyeMood, { lid: number; pupil: number; spin: number; colors: [string, string, string] }> = {
-  idle: { lid: 0.42, pupil: 0.2, spin: 1, colors: ["#6d6bff", "#a66bff", "#ff8a7a"] },
-  watching: { lid: 0.56, pupil: 0.24, spin: 1.4, colors: ["#8a86ff", "#bf82ff", "#ff9d88"] },
-  scanning: { lid: 0.34, pupil: 0.13, spin: 6, colors: ["#9c98ff", "#cf95ff", "#ffb8a2"] },
-  safe: { lid: 0.5, pupil: 0.22, spin: 0.7, colors: ["#5ed3b0", "#6fa8ff", "#5ed3b0"] },
-  danger: { lid: 0.24, pupil: 0.11, spin: 2.4, colors: ["#ff4d61", "#ff8a7a", "#ff2e4d"] },
+  idle: { lid: 0.5, pupil: 0.2, spin: 1, colors: ["#6d6bff", "#a66bff", "#ff8a7a"] },
+  watching: { lid: 0.64, pupil: 0.24, spin: 1.4, colors: ["#8a86ff", "#bf82ff", "#ff9d88"] },
+  scanning: { lid: 0.42, pupil: 0.13, spin: 6, colors: ["#9c98ff", "#cf95ff", "#ffb8a2"] },
+  safe: { lid: 0.58, pupil: 0.22, spin: 0.7, colors: ["#5ed3b0", "#6fa8ff", "#5ed3b0"] },
+  danger: { lid: 0.3, pupil: 0.11, spin: 2.4, colors: ["#ff4d61", "#ff8a7a", "#ff2e4d"] },
 };
 
 const NOISE = /* glsl */ `

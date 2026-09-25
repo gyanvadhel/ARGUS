@@ -5,7 +5,7 @@ import { Phone, PhoneOff, ShieldBan } from "lucide-react";
 import { toast } from "sonner";
 import { Eye, type EyeMood } from "@/components/eye/eye";
 import { Button } from "@/components/ui/button";
-import { callerVerdict, LEVEL_META } from "@/lib/format";
+import { callerVerdict, levelMeta } from "@/lib/format";
 import type { Community, Verdict } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +15,14 @@ type Props = {
   verdict: Verdict;
   community: Community;
   contacts: number;
+  /** False for numbers that can't exist: they can be blocked, but there's no real line to report. */
+  reportable?: boolean;
   onClose: () => void;
   onBlock: () => Promise<void>;
 };
 
 /** A phone ringing with an Argus-screened call: name tag, verdict banner, and the eye reacting to the risk. */
-export function IncomingCall({ verdict, community, contacts, onClose, onBlock }: Props) {
+export function IncomingCall({ verdict, community, contacts, reportable = true, onClose, onBlock }: Props) {
   const [state, setState] = useState<CallState>("ringing");
   const [busy, setBusy] = useState(false);
   const decline = useRef<HTMLButtonElement>(null);
@@ -28,7 +30,7 @@ export function IncomingCall({ verdict, community, contacts, onClose, onBlock }:
   const risky = score >= 60;
   const info = verdict.signals.find((s) => s.source === "Number validation")?.evidence ?? {};
   const reason = verdict.signals.find((s) => s.status === "malicious" || s.status === "suspicious")?.summary;
-  const tone = level === "UNVERIFIED" ? "var(--risk-unknown)" : LEVEL_META[level].color;
+  const tone = levelMeta(level, verdict.verified).color;
   const mood: EyeMood = risky ? "danger" : score < 30 && level !== "UNVERIFIED" ? "safe" : "watching";
 
   useEffect(() => {
@@ -40,7 +42,9 @@ export function IncomingCall({ verdict, community, contacts, onClose, onBlock }:
 
   const outcome = {
     declined: { title: "Call declined", body: risky ? "Good call. Argus will keep watching this number." : "The caller can leave a message." },
-    blocked: { title: "Blocked and reported", body: "Other Argus users will now see this number flagged." },
+    blocked: reportable
+      ? { title: "Blocked and reported", body: "Other Argus users will now see this number flagged." }
+      : { title: "Blocked", body: "This caller ID was faked, so there's no real number to report." },
     answered: { title: "Connected", body: "Never share codes, PINs or passwords on a call you didn't expect." },
   } as const;
 
@@ -88,7 +92,7 @@ export function IncomingCall({ verdict, community, contacts, onClose, onBlock }:
           style={{ borderColor: `color-mix(in oklab, ${tone} 45%, transparent)`, background: `color-mix(in oklab, ${tone} 10%, transparent)` }}
         >
           <p className="font-medium" style={{ color: tone }}>
-            {risky || score >= 30 ? callerVerdict(score, level) : "No warnings from Argus"}
+            {risky || score >= 30 ? callerVerdict(score, level, verdict.verified) : "No warnings from Argus"}
           </p>
           <p className="mt-0.5 text-xs leading-relaxed text-foreground/75">
             {reason ?? "Not reported by Argus users and not on any blocklist."}
@@ -109,7 +113,7 @@ export function IncomingCall({ verdict, community, contacts, onClose, onBlock }:
                 }}
                 className="mx-auto mb-7 flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-foreground/85 hover:border-foreground/40 disabled:opacity-50"
               >
-                <ShieldBan className="size-4" /> Block and report
+                <ShieldBan className="size-4" /> {reportable ? "Block and report" : "Block"}
               </button>
             )}
             <div className="flex items-end justify-between">

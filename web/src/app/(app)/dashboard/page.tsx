@@ -18,17 +18,22 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-type Row = Pick<ScanRow, "id" | "kind" | "input_preview" | "score" | "level" | "created_at">;
+type Row = Pick<ScanRow, "id" | "kind" | "input_preview" | "score" | "level" | "created_at"> & { verified: boolean | null };
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const [{ data: { user } }, { data: rows }, health] = await Promise.all([
     supabase.auth.getUser(),
-    supabase.from("scans").select("id,kind,input_preview,score,level,created_at").order("created_at", { ascending: false }).limit(500),
+    supabase
+      .from("scans")
+      .select("id,kind,input_preview,score,level,created_at,verified:verdict->verified")
+      .order("created_at", { ascending: false })
+      .limit(500),
     api.health().catch(() => null),
   ]);
   const scans = (rows ?? []) as Row[];
   const stats = summarize(scans);
+  const verified = scans.filter((s) => s.verified === true).length;
   const firstName = String(user?.user_metadata?.full_name ?? "").split(" ")[0] || "there";
 
   return (
@@ -43,7 +48,7 @@ export default async function DashboardPage() {
         <StatCard label="Total scans" value={stats.total} tone="var(--foreground)" />
         <StatCard label="Threats caught" value={stats.threats} tone="var(--risk-sus)" hint="Suspicious or worse" />
         <StatCard label="High risk" value={stats.highRisk} tone="var(--risk-high)" />
-        <StatCard label="Safe" value={stats.safe} tone="var(--risk-safe)" />
+        <StatCard label="No red flags" value={stats.safe} tone="var(--risk-clear)" hint={`${verified} verified safe`} />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -54,23 +59,19 @@ export default async function DashboardPage() {
           <ThreatsChart data={stats.series} />
         </section>
         <section className="glass rounded-3xl p-6">
-          <h2 className="mb-5 font-serif text-2xl">Protection status</h2>
-          <ProtectionStatus sources={health?.sources ?? null} />
+          <h2 className="mb-5 font-serif text-2xl">By channel</h2>
+          <KindBreakdown data={stats.byKind} />
         </section>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <section className="glass rounded-3xl p-6">
-          <h2 className="mb-5 font-serif text-2xl">By channel</h2>
-          <KindBreakdown data={stats.byKind} />
-        </section>
         <section className="glass rounded-3xl p-6 lg:col-span-2">
           <div className="mb-2 flex items-baseline justify-between">
             <h2 className="font-serif text-2xl">Recent activity</h2>
             <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground">View all</Link>
           </div>
           {scans.length ? (
-            <RecentScans rows={scans.slice(0, 6)} />
+            <RecentScans rows={scans.slice(0, 10)} />
           ) : (
             <div className="py-10 text-center">
               <p className="text-muted-foreground">Nothing scanned yet.</p>
@@ -79,6 +80,10 @@ export default async function DashboardPage() {
               </Link>
             </div>
           )}
+        </section>
+        <section className="glass rounded-3xl p-6">
+          <h2 className="mb-5 font-serif text-2xl">Protection status</h2>
+          <ProtectionStatus sources={health?.sources ?? null} feeds={health?.feeds ?? null} />
         </section>
       </div>
     </>
