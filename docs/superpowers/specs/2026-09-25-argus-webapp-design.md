@@ -96,7 +96,7 @@ transitions; anime.js handles showpieces (iris, score count-up, staggered reveal
 ## Configuration
 
 `.env.example` at root and in `web/`/`api/`: `NEXT_PUBLIC_SUPABASE_URL`,
-`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ARGUS_API_URL`, `VIRUSTOTAL_API_KEY`,
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `ARGUS_API_URL`, `VIRUSTOTAL_API_KEY`,
 `GOOGLE_SAFE_BROWSING_KEY`, `ABUSECH_AUTH_KEY` (URLhaus + MalwareBazaar),
 `ANTHROPIC_API_KEY`. Real `.env` files are git-ignored.
 
