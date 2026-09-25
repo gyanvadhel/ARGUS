@@ -17,8 +17,8 @@ variable names are listed, values are not.
   - `extension/`: Chrome/Edge extension, Manifest V3.
 - **Repo:** https://github.com/gyanvadhel/ARGUS (public), branch `main`. The original Streamlit prototype lives in
   `ARGUS-main/`, kept for reference only.
-- **Live site:** https://argus-watcher.vercel.app (Vercel). The engine isn't hosted yet, so **scans fail in
-  production** until it's deployed to Render (see "Deployment"). Locally, everything works.
+- **Live site:** https://argus-watcher.vercel.app (Vercel), with the engine on Render at
+  https://argus-api-xsea.onrender.com. **Working end to end** (verified 2026-09-26, both ML models live).
 - **Core rule from the user: never fake anything.** Unfinished features are shown as "Coming soon". "Safe" is only
   shown when positive evidence verifies it; otherwise the verdict is "No red flags".
 
@@ -54,7 +54,7 @@ variable names are listed, values are not.
 **Tests:** API 191 (pytest), web 68 (vitest), extension 5 (node:test). The production build passes. A full browser
 rehearsal of the demo script passed.
 
-**Deployed:** the website on Vercel. The Render engine is **not deployed yet**; see §11.
+**Deployed:** the website on Vercel and the engine on Render, both from `main`. See §11.
 
 **Kept "Coming soon" by the user's choice:** Android live call screening, Outlook inbox, SMS/WhatsApp family alerts,
 and extension store listings.
@@ -491,17 +491,17 @@ cd web; npm install; cd ..
     - Engine-only variables the website never reads: `VIRUSTOTAL_API_KEY`, `GOOGLE_SAFE_BROWSING_KEY`,
       `ABUSECH_AUTH_KEY`, `ARGUS_DEFAULT_REGION`. They're marked Sensitive, so their values can't be read back. The
       engine gets its own copies on Render.
-  - **Missing: `ARGUS_API_TOKEN`.** The user must copy it from Render (it's a secret). Until then, live scans fail
-    with 401.
+  - `ARGUS_API_TOKEN`: set by the user (Sensitive, production only). Live scans verified on 2026-09-26.
   - Vercel flags `GOOGLE_CLIENT_SECRET`, `GMAIL_TOKEN_KEY` and `TELEGRAM_BOT_TOKEN` as "readable-secret": they
     should be re-added as Sensitive.
   - The first deploys were built from the repo root by mistake; fixed on 2026-09-25 by setting the Root Directory.
 - **Render (engine): deployed 2026-09-26 at https://argus-api-xsea.onrender.com.**
   - `/health` is OK with feeds loaded. `/scan` correctly demands the token.
-  - VirusTotal is off there (no `VIRUSTOTAL_API_KEY` set on Render yet).
+  - VirusTotal is on there (the user added `VIRUSTOTAL_API_KEY` on Render).
   - `argus-api.onrender.com` (no suffix) is **someone else's** Node app ("Argus backend is live"); Render names are
     first come, first served.
-  - The engine auto-deploys from GitHub `main`, so the ML models reach it only once they're pushed.
+  - The engine auto-deploys from GitHub `main`. The ML models were confirmed live there on 2026-09-26
+    (`.superpowers/e2e/prod-ml-check.mjs`).
   - The blueprint `render.yaml` defines a free web service:
   - name `argus-api`, region singapore, rootDir `api`
   - build `pip install -r requirements.txt`
@@ -511,7 +511,7 @@ cd web; npm install; cd ..
   - It sleeps after 15 min idle; the first request after that takes about a minute, and the website shows "waking up".
 - **Remaining steps:**
   1. ~~Render Blueprint~~ (done). ~~Vercel `ARGUS_API_URL`~~ (done).
-  2. Vercel: add `ARGUS_API_TOKEN` (the user copies it from Render → Environment), then redeploy.
+  2. ~~Vercel `ARGUS_API_TOKEN`~~ (done).
   3. Google Cloud OAuth client: add `https://argus-watcher.vercel.app/api/gmail/callback` as a redirect URI.
   4. Supabase Auth URL configuration: Site URL `https://argus-watcher.vercel.app`, and add it to the redirect URLs
      (keep localhost).
@@ -647,8 +647,8 @@ cd web; npm install; cd ..
 
 ## 17. Next steps (suggested order)
 
-1. Add `ARGUS_API_TOKEN` on Vercel (from Render) and redeploy. Push `main` so Render gets the ML models and Vercel
-   gets the phone-layout fixes. Verify with `prod-check.mjs https://argus-watcher.vercel.app`.
+1. ~~Token, push, deploy~~ (done 2026-09-26). Re-verify any time with
+   `.superpowers/e2e/prod-check.mjs https://argus-watcher.vercel.app`.
 2. Add the production Gmail redirect URI in Google Cloud and the Site URL in Supabase.
 3. Test the Telegram flow end to end with the real bot token and a phone.
 4. Before the demo: open the site a couple of minutes early to wake Render. Clean test data with the SQL above.
