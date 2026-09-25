@@ -1,5 +1,5 @@
 import "server-only";
-import type { CallTurn, CallTurnResponse, Verdict } from "./types";
+import type { Community, ScanKind, Verdict } from "./types";
 
 const BASE = process.env.ARGUS_API_URL ?? "http://127.0.0.1:8000";
 
@@ -26,11 +26,11 @@ async function call<T>(path: string, init?: RequestInit, timeoutMs = 25000): Pro
 }
 
 export const api = {
-  scan: (input: string, communityReports = 0) =>
+  scan: (input: string, community?: Community, kind?: ScanKind) =>
     call<Verdict>("/scan", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ input, community_reports: communityReports }),
+      body: JSON.stringify({ input, community, kind }),
     }),
   scanFile: (file: File) => {
     const form = new FormData();
@@ -39,11 +39,5 @@ export const api = {
   },
   normalizePhone: (number: string) =>
     call<{ e164: string | null }>(`/phone/normalize?number=${encodeURIComponent(number)}`, undefined, 5000),
-  callTurn: (transcript: CallTurn[]) =>
-    call<CallTurnResponse>("/call/turn", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ transcript }),
-    }),
   health: () => call<{ status: string; sources: Record<string, boolean> }>("/health", undefined, 3000),
 };

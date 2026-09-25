@@ -34,5 +34,19 @@ export interface ScanRow {
   created_at: string;
 }
 
-export interface CallTurn { role: "caller" | "assistant"; text: string }
-export interface CallTurnResponse { reply: string; mode: string; analysis: Verdict }
+/** What ARGUS users collectively know about a phone number. */
+export interface Community {
+  reports: number;
+  categories: Record<string, number>;
+  name: string | null;
+  name_votes: number;
+  last_report_days: number | null;
+  sightings: number;
+}
+
+export interface CommunityReport {
+  category: string;
+  name_tag: string | null;
+  note?: string | null;
+  created_at: string;
+}

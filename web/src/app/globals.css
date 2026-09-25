@@ -240,3 +240,24 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Incoming-call screen: a gentle shake while ringing and rings pulsing out from the eye. */
+.phone-ringing {
+  animation: phone-ring 1.6s ease-in-out infinite;
+}
+@keyframes phone-ring {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  66% { transform: rotate(-1.2deg); }
+  72% { transform: rotate(1.2deg); }
+  78% { transform: rotate(-0.8deg); }
+  84% { transform: rotate(0.8deg); }
+}
+.ring-pulse {
+  translate: -50% -50%;
+  animation: ring-pulse 1.8s ease-out infinite;
+  opacity: 0;
+}
+@keyframes ring-pulse {
+  0% { transform: scale(0.7); opacity: 0.7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}

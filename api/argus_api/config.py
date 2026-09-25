@@ -11,7 +11,6 @@ KEY_NAMES = {
     "VirusTotal": "VIRUSTOTAL_API_KEY",
     "Google Safe Browsing": "GOOGLE_SAFE_BROWSING_KEY",
     "abuse.ch (URLhaus + MalwareBazaar)": "ABUSECH_AUTH_KEY",
-    "Claude (Call Assistant)": "ANTHROPIC_API_KEY",
 }
 
 

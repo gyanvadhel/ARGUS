@@ -2,23 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { api } from "@/lib/api";
+import { communityFor, recordSightings } from "@/lib/community-data";
 import { createClient } from "@/lib/supabase/server";
-import type { Verdict } from "@/lib/types";
+import type { Community, Verdict } from "@/lib/types";
 
 export type ScanResult = { ok: true; id: string; verdict: Verdict } | { ok: false; error: string };
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const PHONEISH = /^\+?[\d\s\-().]{7,20}$/;
 
-async function communityReports(supabase: Awaited<ReturnType<typeof createClient>>, input: string): Promise<number> {
-  if (!PHONEISH.test(input)) return 0;
+async function phoneCommunity(supabase: Awaited<ReturnType<typeof createClient>>, input: string): Promise<Community | undefined> {
+  if (!PHONEISH.test(input)) return undefined;
   try {
     const { e164 } = await api.normalizePhone(input);
-    if (!e164) return 0;
-    const { count } = await supabase.from("phone_reports").select("id", { count: "exact", head: true }).eq("number", e164);
-    return count ?? 0;
+    return e164 ? (await communityFor(supabase, e164)).community : undefined;
   } catch {
-    return 0;
+    return undefined;
   }
 }
 
@@ -38,7 +37,7 @@ export async function runScan(formData: FormData): Promise<ScanResult> {
       verdict = await api.scanFile(file);
       preview = file.name;
     } else if (input) {
-      verdict = await api.scan(input, await communityReports(supabase, input));
+      verdict = await api.scan(input, await phoneCommunity(supabase, input));
       preview = input;
     } else {
       return { ok: false, error: "Paste something or drop a file to scan." };
@@ -57,6 +56,7 @@ export async function runScan(formData: FormData): Promise<ScanResult> {
       .select("id")
       .single();
     if (error) return { ok: false, error: `Scanned, but couldn't save the result: ${error.message}` };
+    await recordSightings(supabase, verdict).catch(() => undefined);
 
     revalidatePath("/dashboard");
     revalidatePath("/history");
@@ -69,13 +69,18 @@ export async function runScan(formData: FormData): Promise<ScanResult> {
 export type ReportResult = { ok: true } | { ok: false; error: string };
 const CATEGORIES = ["Scam", "Spam", "Robocall", "Fraud", "Other"] as const;
 
-export async function reportNumber(e164: string, category: string, note: string): Promise<ReportResult> {
+export async function reportNumber(e164: string, category: string, note: string, nameTag = ""): Promise<ReportResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Your session expired. Please sign in again." };
   if (!/^\+[1-9]\d{6,14}$/.test(e164)) return { ok: false, error: "That number can't be reported." };
   if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) return { ok: false, error: "Pick a category." };
-  const { error } = await supabase.from("phone_reports").insert({ number: e164, category, note: note.trim().slice(0, 280) || null });
+  const { error } = await supabase.from("phone_reports").insert({
+    number: e164,
+    category,
+    note: note.trim().slice(0, 280) || null,
+    name_tag: nameTag.trim().slice(0, 60) || null,
+  });
   if (error) return { ok: false, error: error.code === "23505" ? "You've already reported this number." : error.message };
   return { ok: true };
 }

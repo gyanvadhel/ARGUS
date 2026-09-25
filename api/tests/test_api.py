@@ -55,14 +55,17 @@ def test_scan_phone_with_community_reports():
     assert r["kind"] == "phone" and r["score"] >= 60
 
 
-def test_call_turn_endpoint():
-    body = {"transcript": [{"role": "assistant", "text": "Hi"}, {"role": "caller", "text": "Wrong number, sorry"}]}
-    r = client.post("/call/turn", json=body)
-    assert r.status_code == 200 and r.json()["mode"] == "scripted"
+def test_scan_phone_with_rich_community_data():
+    body = {"input": "+1 650-253-0000", "community": {"reports": 6, "categories": {"Scam": 5, "Spam": 1}, "name": "Fake bank", "name_votes": 3, "sightings": 1}}
+    r = client.post("/scan", json=body).json()
+    community = next(s for s in r["signals"] if s["source"] == "Community reports")
+    assert r["level"] == "HIGH RISK"
+    assert "mostly as Scam" in community["summary"]
+    assert community["evidence"]["name"] == "Fake bank"
 
 
-def test_call_turn_rejects_empty_transcript():
-    assert client.post("/call/turn", json={"transcript": []}).status_code == 422
+def test_call_turn_endpoint_is_gone():
+    assert client.post("/call/turn", json={"transcript": []}).status_code == 404
 
 
 def test_scan_text():

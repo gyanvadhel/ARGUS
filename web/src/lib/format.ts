@@ -45,3 +45,12 @@ export function timeAgo(iso: string, now = Date.now()): string {
   if (h < 24) return `${h}h ago`;
   return `${Math.round(h / 24)}d ago`;
 }
+
+/** The one-line Caller ID verdict shown on the identity card and the incoming-call screen. */
+export function callerVerdict(score: number, level: RiskLevel): string {
+  if (level === "UNVERIFIED") return "No verdict";
+  if (score >= 80) return "Likely scam";
+  if (score >= 60) return "Suspicious";
+  if (score >= 30) return "Be careful";
+  return "Looks safe";
+}
