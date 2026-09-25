@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
 from argus_api import config
+from argus_api.checkers.email import check_email
 from argus_api.checkers.file import MAX_FILE_BYTES, check_file
 from argus_api.checkers.text import check_text
 from argus_api.checkers.url import check_url
@@ -40,6 +41,8 @@ def health() -> dict:
 async def dispatch(kind: Kind, text: str, community_reports: int) -> Verdict:
     if kind == "url":
         return await check_url(text)
+    if kind == "email":
+        return await check_email(text)
     return await check_text(text)
 
 

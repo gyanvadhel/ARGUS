@@ -41,6 +41,11 @@ def test_scan_file_empty():
     assert r.status_code == 422
 
 
+def test_scan_routes_raw_email():
+    raw = "From: Alice <alice@example.com>\nTo: you@example.com\nSubject: hi\n\nSee you at noon."
+    assert client.post("/scan", json={"input": raw}).json()["kind"] == "email"
+
+
 def test_scan_text():
     r = client.post("/scan", json={"input": "Hey are we still on for lunch tomorrow at noon?"})
     assert r.status_code == 200
