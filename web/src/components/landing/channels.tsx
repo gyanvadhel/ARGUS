@@ -55,7 +55,7 @@ export function Channels() {
       <ul className="mt-12 border-t border-border/70">
         {CHANNELS.map((c) => (
           <li key={c.name} tabIndex={0} className="group border-b border-border/70 py-7 outline-none focus-visible:bg-white/2">
-            <div className="grid items-center gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+            <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
               <div className="flex items-center gap-5">
                 <WatchingEye className="h-5 w-8 shrink-0" />
                 <h3 className="font-display stretch-hover text-6xl text-foreground/85 group-hover:text-foreground group-hover:font-stretch-100% group-focus:font-stretch-100% md:text-8xl">

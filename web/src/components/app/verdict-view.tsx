@@ -32,7 +32,7 @@ export function VerdictView({ verdict, actions }: { verdict: Verdict; actions?: 
   }, [verdict]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
       <section className="glass relative flex flex-col items-center overflow-hidden rounded-3xl p-8 text-center">
         <div className="absolute -top-20 h-48 w-72 rounded-full blur-3xl" style={{ background: `color-mix(in oklab, ${meta.color} 22%, transparent)` }} aria-hidden />
         <ScoreDial score={verdict.score} color={meta.color} />
@@ -56,7 +56,7 @@ export function VerdictView({ verdict, actions }: { verdict: Verdict; actions?: 
           <h2 className="font-serif text-3xl">Evidence</h2>
           <p className="text-sm text-muted-foreground">{answered} of {signals.length} sources answered</p>
         </div>
-        <div ref={gridRef} className="grid gap-3 xl:grid-cols-2">
+        <div ref={gridRef} className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {signals.map((s, i) => <SignalCard key={`${i}-${s.source}`} signal={s} />)}
         </div>
       </section>

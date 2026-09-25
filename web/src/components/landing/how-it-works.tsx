@@ -17,7 +17,7 @@ const PREVIEW = [
 
 export function HowItWorks() {
   return (
-    <section className="mx-auto grid max-w-[1600px] items-center gap-16 px-6 py-28 sm:px-10 lg:grid-cols-2">
+    <section className="mx-auto grid max-w-[1600px] grid-cols-1 items-center gap-16 px-6 py-28 sm:px-10 lg:grid-cols-2">
       <div>
         <h2 className="font-display text-[clamp(2.8rem,6vw,6rem)]">
           Evidence,
@@ -51,10 +51,13 @@ export function HowItWorks() {
         </div>
         <ul className="mt-9 divide-y divide-border/60 border-y border-border/60">
           {PREVIEW.map((p) => (
-            <li key={p.source} className="flex items-center gap-4 py-3.5">
-              <span className="size-2 shrink-0 rounded-full" style={{ background: p.color }} />
-              <span className="w-44 shrink-0 text-sm font-medium">{p.source}</span>
-              <span className="truncate text-sm text-muted-foreground">{p.summary}</span>
+            <li key={p.source} className="flex items-start gap-4 py-3.5 sm:items-center">
+              <span className="mt-1.5 size-2 shrink-0 rounded-full sm:mt-0" style={{ background: p.color }} />
+              {/* Phones stack the source over its finding; wider screens keep one line per source. */}
+              <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
+                <p className="text-sm font-medium sm:w-44 sm:shrink-0">{p.source}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground sm:mt-0 sm:truncate">{p.summary}</p>
+              </div>
             </li>
           ))}
         </ul>

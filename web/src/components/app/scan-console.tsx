@@ -142,11 +142,11 @@ export function ScanConsole({ initialInput }: { initialInput?: string }) {
     ? STAGES[stage]
     : result
       ? result.verdict.score >= 60 ? "That one's dangerous." : result.verdict.score < 30 ? "Looks clean." : "Worth a second look."
-      : focused ? "Reading along�" : "Watching for something to check.";
+      : focused ? "Reading along…" : "Watching for something to check.";
 
   return (
     <div className="space-y-8">
-      <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
       <div className="relative hidden min-h-72 lg:block">
         <Eye mood={mood} target={target} distance={4.4} className="absolute inset-0" />
         <p className="absolute inset-x-0 bottom-1 text-center text-xs text-muted-foreground" aria-live="polite">{caption}</p>

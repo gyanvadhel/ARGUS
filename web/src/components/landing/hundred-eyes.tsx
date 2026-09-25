@@ -2,7 +2,7 @@ import { WatchingEye } from "@/components/eye/watching-eye";
 
 export function HundredEyes() {
   return (
-    <section id="eyes" className="mx-auto grid max-w-[1600px] items-center gap-16 px-6 py-32 sm:px-10 lg:grid-cols-[1fr_1.15fr] lg:py-44">
+    <section id="eyes" className="mx-auto grid max-w-[1600px] grid-cols-1 items-center gap-16 px-6 py-32 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:py-44">
       <div>
         <h2 className="font-display text-[clamp(3.8rem,9vw,9.5rem)]">
           A hundred

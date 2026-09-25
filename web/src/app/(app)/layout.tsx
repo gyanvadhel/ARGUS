@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-dvh">
       <Sidebar name={name} email={user.email ?? ""} />
       <div className="min-w-0 flex-1">
-        <MobileNav />
+        <MobileNav email={user.email ?? ""} />
         <main className="mx-auto max-w-6xl px-5 py-8 lg:px-10 lg:py-12">{children}</main>
       </div>
     </div>

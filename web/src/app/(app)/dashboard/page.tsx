@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         <StatCard label="No red flags" value={stats.safe} tone="var(--risk-clear)" hint={`${verified} verified safe`} />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <section className="glass rounded-3xl p-6 lg:col-span-2">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="font-serif text-2xl">Scans and threats, last 14 days</h2>
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
         </section>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <section className="glass rounded-3xl p-6 lg:col-span-2">
           <div className="mb-2 flex items-baseline justify-between">
             <h2 className="font-serif text-2xl">Recent activity</h2>

@@ -87,7 +87,7 @@ function ConnectPanel({ contact, onDone }: { contact: Contact; onDone: () => voi
     );
   }
   return (
-    <div className="mt-3 grid gap-5 rounded-2xl border border-border/70 p-5 sm:grid-cols-[160px_1fr]">
+    <div className="mt-3 grid grid-cols-1 gap-5 rounded-2xl border border-border/70 p-5 sm:grid-cols-[160px_minmax(0,1fr)]">
       <div className="aspect-square w-40 rounded-xl border border-border/60 p-2" aria-label="QR code to connect on Telegram">
         {link ? (
           // Safe to inject: an SVG we generated on the server from our own link.
@@ -148,7 +148,7 @@ export function ContactsManager({ contacts, alerts, telegram }: { contacts: Cont
   }, [state]);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-4">
         <section className="glass rounded-3xl p-6">
           <h2 className="font-serif text-2xl">Trusted contacts</h2>

@@ -12,7 +12,7 @@ export function Roadmap() {
         <h2 className="font-display text-[clamp(2.8rem,6vw,6rem)]">Coming next</h2>
         <p className="max-w-xs text-sm text-muted-foreground">Designed and on the way. Not live yet.</p>
       </div>
-      <ul className="mt-12 grid border-t border-border/70 sm:grid-cols-2">
+      <ul className="mt-12 grid grid-cols-1 border-t border-border/70 sm:grid-cols-2">
         {ITEMS.map((item, i) => (
           <li key={item.title} className={`border-b border-border/70 py-8 sm:px-8 ${i % 2 === 0 ? "sm:border-r sm:pl-0" : ""}`}>
             <div className="flex flex-wrap items-center gap-3">

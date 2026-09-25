@@ -31,14 +31,14 @@ function IdentityCard({ found, onSimulate }: { found: Found; onSimulate: () => v
   const max = Math.max(1, ...CATEGORIES.map((c) => community.categories[c] ?? 0));
   return (
     <section className="rounded-[2rem] border border-border/70 p-6 sm:p-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+        <div className="min-w-0">
           <p className="text-sm text-muted-foreground">Verdict</p>
-          <p className="font-display mt-2 text-5xl sm:text-6xl" style={{ color: tone }}>
+          <p className="font-display mt-2 text-[clamp(2.25rem,10vw,3rem)] sm:text-6xl" style={{ color: tone }}>
             {callerVerdict(verdict.score, verdict.level, verdict.verified)}
           </p>
         </div>
-        <p className="font-display text-6xl tabular-nums" style={{ color: tone }} aria-label={`Risk ${verdict.score} out of 100`}>
+        <p className="font-display text-5xl tabular-nums sm:text-6xl" style={{ color: tone }} aria-label={`Risk ${verdict.score} out of 100`}>
           {verdict.score}
         </p>
       </div>
@@ -231,13 +231,13 @@ export function CallerIdConsole({ contacts }: { contacts: number }) {
       {found ? (
         <div
           aria-busy={pending}
-          className={cn("grid gap-6 transition-opacity lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]", pending && "pointer-events-none opacity-40")}
+          className={cn("grid grid-cols-1 gap-6 transition-opacity lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]", pending && "pointer-events-none opacity-40")}
         >
           <IdentityCard found={found} onSimulate={() => setCalling(true)} />
           <div className="space-y-6">
             <section>
               <h3 className="font-serif mb-3 text-2xl">Why Argus thinks so</h3>
-              <div className="grid gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 {signals.map((s, i) => (
                   <SignalCard key={`${i}-${s.source}`} signal={s} visible />
                 ))}
