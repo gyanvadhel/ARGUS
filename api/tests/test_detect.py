@@ -17,7 +17,7 @@ def test_urls(raw):
     assert detect_kind(raw) == "url"
 
 
-@pytest.mark.parametrize("raw", ["+1 (800) 555-0142", "1-800-555-0142", "9876543210", "+44 20 7946 0958"])
+@pytest.mark.parametrize("raw", ["+1 (800) 555-0142", "1-800-555-0142", "9876543210", "+44 20 7946 0958", "12345678901234567890", "+999 123 4567"])
 def test_phones(raw):
     assert detect_kind(raw) == "phone"
 

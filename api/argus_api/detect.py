@@ -6,7 +6,7 @@ _HEADER = re.compile(r"^(from|to|subject|received|return-path|message-id|date|re
 _URL = re.compile(r"^(www\.)?([a-z0-9-]+\.)+[a-z]{2,}(:\d{2,5})?([/?#]\S*)?$", re.I)
 _IP_URL = re.compile(r"^(https?://)?\d{1,3}(\.\d{1,3}){3}(:\d{2,5})?([/?#]\S*)?$")
 _SCHEME = re.compile(r"^https?://\S+$", re.I)
-_PHONE = re.compile(r"^\+?[\d\s\-().]{7,20}$")
+_PHONE = re.compile(r"^\+?[\d\s\-().]+$")
 
 
 def detect_kind(raw: str) -> Kind:
@@ -15,7 +15,8 @@ def detect_kind(raw: str) -> Kind:
         return "email"
     if _IP_URL.match(text):  # before phones: a dotted quad also looks like a run of digits
         return "url"
-    if _PHONE.match(text) and 7 <= sum(ch.isdigit() for ch in text) <= 15:
+    # Anything number-shaped goes to the phone checker, even impossible lengths: it can explain why they're fake.
+    if _PHONE.match(text) and sum(ch.isdigit() for ch in text) >= 7:
         return "phone"
     if _SCHEME.match(text) or _IP_URL.match(text) or _URL.match(text):
         return "url"

@@ -52,12 +52,37 @@ def _region() -> str:
     return os.environ.get("ARGUS_DEFAULT_REGION", "US").upper()
 
 
-def _parse(raw: str) -> PhoneNumber | None:
+def _parse_with_reason(raw: str) -> tuple[PhoneNumber | None, str | None]:
+    """Parse a number, or explain in plain words why it can't be a real phone number."""
+    digits = sum(ch.isdigit() for ch in raw)
     try:
         parsed = phonenumbers.parse(raw.strip(), _region())
-    except phonenumbers.NumberParseException:
-        return None
-    return parsed if phonenumbers.is_possible_number(parsed) else None
+    except phonenumbers.NumberParseException as exc:
+        kind = exc.error_type
+        if digits > 15 or kind == phonenumbers.NumberParseException.TOO_LONG:
+            return None, f"phone numbers have at most 15 digits, this has {digits}"
+        if kind == phonenumbers.NumberParseException.INVALID_COUNTRY_CODE:
+            return None, "it doesn't start with a real country code"
+        if kind in (phonenumbers.NumberParseException.TOO_SHORT_NSN, phonenumbers.NumberParseException.TOO_SHORT_AFTER_IDD):
+            return None, f"it's too short to be a phone number ({digits} digits)"
+        return None, "it isn't a phone number format any country uses"
+    if digits > 15:
+        return None, f"phone numbers have at most 15 digits, this has {digits}"
+    result = phonenumbers.is_possible_number_with_reason(parsed)
+    if result in (phonenumbers.ValidationResult.IS_POSSIBLE, phonenumbers.ValidationResult.IS_POSSIBLE_LOCAL_ONLY):
+        return parsed, None
+    country = geocoder.country_name_for_number(parsed, "en") or f"+{parsed.country_code}"
+    reasons = {
+        phonenumbers.ValidationResult.INVALID_COUNTRY_CODE: "it doesn't start with a real country code",
+        phonenumbers.ValidationResult.TOO_SHORT: f"it has too few digits for a {country} number",
+        phonenumbers.ValidationResult.TOO_LONG: f"it has too many digits for a {country} number",
+        phonenumbers.ValidationResult.INVALID_LENGTH: f"it has the wrong number of digits for a {country} number",
+    }
+    return None, reasons.get(result, "it isn't a dialable number")
+
+
+def _parse(raw: str) -> PhoneNumber | None:
+    return _parse_with_reason(raw)[0]
 
 
 def normalize(raw: str) -> str | None:
@@ -65,12 +90,13 @@ def normalize(raw: str) -> str | None:
     return phonenumbers.format_number(parsed, PhoneNumberFormat.E164) if parsed else None
 
 
-def validity_signal(parsed: PhoneNumber | None) -> Signal:
+def validity_signal(parsed: PhoneNumber | None, reason: str | None = None) -> Signal:
     source = "Number validation"
     if parsed is None:
-        return Signal(source=source, status="suspicious", score=40, weight=1.0,
-                      summary="Not a real, dialable phone number, a common sign of spoofing",
-                      evidence={"threat_type": "Spoofed caller ID"})
+        why = reason or "it isn't a dialable number"
+        return Signal(source=source, status="suspicious", score=70, weight=1.0,
+                      summary=f"Not a real phone number: {why}. Caller IDs like this are spoofed or mistyped",
+                      evidence={"reason": why, "threat_type": "Fake or spoofed number"})
     number_type = phonenumbers.number_type(parsed)
     line = LINE_TYPES.get(number_type, "unknown")
     if number_type == PhoneNumberType.TOLL_FREE:
@@ -87,7 +113,7 @@ def validity_signal(parsed: PhoneNumber | None) -> Signal:
         "line_type": line,
     }
     if not phonenumbers.is_valid_number(parsed):
-        return Signal(source=source, status="suspicious", score=40, weight=1.0,
+        return Signal(source=source, status="suspicious", score=55, weight=1.0,
                       summary="This number isn't assigned to anyone, often a sign of a spoofed caller ID",
                       evidence={**evidence, "threat_type": "Spoofed caller ID"})
     if number_type == PhoneNumberType.VOIP:
@@ -178,10 +204,10 @@ def sightings_signal(c: Community) -> Signal:
 
 def check_phone(raw: str, community: Community | None = None, community_reports: int = 0) -> Verdict:
     c = community or Community(reports=community_reports)
-    parsed = _parse(raw)
-    e164 = normalize(raw)
+    parsed, reason = _parse_with_reason(raw)
+    e164 = phonenumbers.format_number(parsed, PhoneNumberFormat.E164) if parsed else None
     signals = [
-        validity_signal(parsed),
+        validity_signal(parsed, reason),
         callback_risk_signal(parsed),
         blocklist_signal(e164),
         community_signal(c),

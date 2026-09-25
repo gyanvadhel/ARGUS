@@ -24,3 +24,6 @@ build/
 
 # superpowers scratch
 .superpowers/
+
+# downloaded threat feeds
+api/.cache/

@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
@@ -9,9 +11,21 @@ from argus_api.checkers.phone import Community, check_phone, normalize
 from argus_api.checkers.text import check_text
 from argus_api.checkers.url import check_url
 from argus_api.detect import detect_kind
+from argus_api.intel import feeds, netcheck
 from argus_api.models import Kind, Verdict
 
-app = FastAPI(title="ARGUS API", version="1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Serve from the cached threat feeds at once; keep them fresh in the background unless offline.
+    if netcheck.offline():
+        feeds.store.load_from_cache()
+    else:
+        feeds.store.start()
+    yield
+
+
+app = FastAPI(title="ARGUS API", version="1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -37,7 +51,7 @@ class ScanRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "sources": config.source_status()}
+    return {"status": "ok", "sources": config.source_status(), "feeds": feeds.store.status()}
 
 
 async def dispatch(kind: Kind, text: str, community: Community) -> Verdict:

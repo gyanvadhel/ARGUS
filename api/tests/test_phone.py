@@ -76,3 +76,22 @@ def test_community_name_travels_with_the_verdict():
 def test_toll_free_numbers_say_so_instead_of_a_location():
     s = next(s for s in check_phone("1-800-555-0142").signals if s.source == "Number validation")
     assert s.evidence["region"] == "Toll-free"
+
+
+def test_twenty_digits_is_not_a_real_number():
+    v = check_phone("12345678901234567890")
+    s = next(s for s in v.signals if s.source == "Number validation")
+    assert v.level == "SUSPICIOUS"
+    assert "15 digits" in s.summary
+
+
+def test_fake_country_code_is_not_a_real_number():
+    v = check_phone("+999 123 4567")
+    s = next(s for s in v.signals if s.source == "Number validation")
+    assert v.score >= 60
+    assert "country code" in s.summary
+
+
+def test_valid_unknown_number_is_no_red_flags_not_verified_safe():
+    v = check_phone("+1 650-253-0000")
+    assert (v.level, v.verified) == ("SAFE", False)

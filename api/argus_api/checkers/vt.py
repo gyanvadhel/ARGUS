@@ -18,6 +18,9 @@ def vt_stats_signal(source: str, stats: dict, noun: str, extra: dict | None = No
         evidence.setdefault("threat_type", f"Malicious {noun}")
         return Signal(source=source, status="malicious", score=min(100, 70 + malicious), weight=1.5,
                       authoritative=True, summary=summary, evidence=evidence)
-    if malicious >= 1 or suspicious >= 2:
-        return Signal(source=source, status="suspicious", score=50, weight=1.0, summary=summary, evidence=evidence)
+    if malicious == 2 or (malicious == 0 and suspicious >= 2):
+        return Signal(source=source, status="suspicious", score=45, weight=1.0, summary=summary, evidence=evidence)
+    if malicious == 1:  # one engine out of ~90 is often a false alarm on its own
+        return Signal(source=source, status="suspicious", score=20, weight=1.0,
+                      summary=f"{summary} (a single detection is often a false alarm)", evidence=evidence)
     return Signal(source=source, status="clean", score=0, weight=1.0, summary=summary, evidence=evidence)

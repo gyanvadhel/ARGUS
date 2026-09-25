@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from argus_api import main
 from argus_api.checkers.file import eicar_bytes
+from argus_api.intel import feeds
 from argus_api.main import app
 from argus_api.risk_engine import get_engine
 
@@ -14,6 +15,43 @@ def test_health_reports_unconfigured_sources():
     body = r.json()
     assert body["status"] == "ok"
     assert body["sources"]["VirusTotal"] is False
+
+
+def test_health_reports_threat_feeds():
+    status = client.get("/health").json()["feeds"]
+    assert set(status) == {"urlhaus", "openphish", "phishing_db", "tranco"}
+    assert {"label", "count", "fetched_at", "error"} <= set(status["openphish"])
+
+
+class _FeedRecorder:
+    def __init__(self):
+        self.calls = []
+
+    def start(self):
+        self.calls.append("start")
+
+    def load_from_cache(self):
+        self.calls.append("cache")
+
+    def status(self):
+        return {}
+
+
+def test_startup_keeps_threat_feeds_fresh(monkeypatch):
+    recorder = _FeedRecorder()
+    monkeypatch.setattr(feeds, "store", recorder)
+    monkeypatch.delenv("ARGUS_OFFLINE")
+    with TestClient(app):
+        pass
+    assert recorder.calls == ["start"]
+
+
+def test_offline_startup_only_uses_cached_feeds(monkeypatch):
+    recorder = _FeedRecorder()
+    monkeypatch.setattr(feeds, "store", recorder)
+    with TestClient(app):
+        pass
+    assert recorder.calls == ["cache"]
 
 
 def test_engine_trains_from_bundled_data():
