@@ -9,6 +9,7 @@ import { Iris } from "@/components/iris/iris";
 import { Button } from "@/components/ui/button";
 import { eicarFile } from "@/lib/eicar";
 import { cn } from "@/lib/utils";
+import { ReportNumber } from "./report-number";
 import { VerdictView } from "./verdict-view";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -179,7 +180,14 @@ export function ScanConsole() {
 
       {result && (
         <div className="space-y-4">
-          <VerdictView verdict={result.verdict} />
+          <VerdictView
+            verdict={result.verdict}
+            actions={
+              result.verdict.kind === "phone" && result.verdict.subject.startsWith("+")
+                ? <ReportNumber e164={result.verdict.subject} />
+                : undefined
+            }
+          />
           <p className="text-center text-xs text-muted-foreground">
             Saved to your <Link href={`/scan/${result.id}`} className="underline underline-offset-4">history</Link>.
           </p>

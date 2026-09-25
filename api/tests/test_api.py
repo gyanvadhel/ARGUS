@@ -46,6 +46,15 @@ def test_scan_routes_raw_email():
     assert client.post("/scan", json={"input": raw}).json()["kind"] == "email"
 
 
+def test_phone_normalize_endpoint():
+    assert client.get("/phone/normalize", params={"number": "(800) 555-0142"}).json() == {"e164": "+18005550142"}
+
+
+def test_scan_phone_with_community_reports():
+    r = client.post("/scan", json={"input": "+1 650-253-0000", "community_reports": 5}).json()
+    assert r["kind"] == "phone" and r["score"] >= 60
+
+
 def test_scan_text():
     r = client.post("/scan", json={"input": "Hey are we still on for lunch tomorrow at noon?"})
     assert r.status_code == 200

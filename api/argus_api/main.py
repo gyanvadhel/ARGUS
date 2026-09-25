@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from argus_api import config
 from argus_api.checkers.email import check_email
 from argus_api.checkers.file import MAX_FILE_BYTES, check_file
+from argus_api.checkers.phone import check_phone, normalize
 from argus_api.checkers.text import check_text
 from argus_api.checkers.url import check_url
 from argus_api.detect import detect_kind
@@ -43,6 +44,8 @@ async def dispatch(kind: Kind, text: str, community_reports: int) -> Verdict:
         return await check_url(text)
     if kind == "email":
         return await check_email(text)
+    if kind == "phone":
+        return check_phone(text, community_reports)
     return await check_text(text)
 
 
@@ -60,3 +63,8 @@ async def scan_file(file: UploadFile) -> Verdict:
     if not data:
         raise HTTPException(status_code=422, detail="File is empty")
     return await check_file(file.filename or "upload", data)
+
+
+@app.get("/phone/normalize")
+def phone_normalize(number: str) -> dict:
+    return {"e164": normalize(number)}
