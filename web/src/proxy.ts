@@ -22,8 +22,16 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
+  // Supabase falls back to the home page when a link's return address isn't on its allow list.
+  const params = request.nextUrl.searchParams;
+  if (path === "/" && (params.has("code") || params.has("token_hash") || params.has("error_description"))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/confirm";
+    return NextResponse.redirect(url);
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
   const isApp = APP_ROUTES.some((p) => path === p || path.startsWith(p + "/"));
 
   if (!user && isApp) {

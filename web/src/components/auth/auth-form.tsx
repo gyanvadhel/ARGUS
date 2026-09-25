@@ -46,6 +46,11 @@ export function AuthForm({ mode, action, next }: Props) {
           {state.error}
         </p>
       )}
+      {state?.notice && (
+        <p role="status" className="rounded-lg border border-border bg-white/4 px-3 py-2 text-sm text-foreground">
+          {state.notice}
+        </p>
+      )}
       <Button type="submit" className="h-11 w-full rounded-full text-sm" disabled={pending}>
         {pending ? "One moment…" : signup ? "Create account" : "Sign in"}
       </Button>

@@ -312,6 +312,11 @@ Both are real models trained on real data, with honest held-out scores; neither 
   - On phones: the eye sits lower on portrait screens, with a shorter placeholder.
 - **Auth:** Supabase email/password (`(auth)/login`, `(auth)/signup`). `proxy.ts` guards the app routes.
   `safe-next.ts` validates `?next=`.
+  - Confirmation emails return to `/auth/confirm`. It turns a token hash (`verifyOtp`) or a code
+    (`exchangeCodeForSession`) into a session, then goes to the dashboard. Links that land on `/` are forwarded there.
+  - Signup detects an existing account (Supabase answers with empty `identities`).
+  - "Check your inbox" is a notice, not an error. Messages come from `lib/auth-flow.ts` (tested).
+  - Before 2026-09-26 the links went to localhost and nobody ended up signed in.
 - **Dashboard:**
   - Stats: total, threats, high risk, and "No red flags" with a verified-safe count.
   - A 14-day chart, a breakdown by channel, and the 10 most recent scans.
@@ -513,8 +518,13 @@ cd web; npm install; cd ..
   1. ~~Render Blueprint~~ (done). ~~Vercel `ARGUS_API_URL`~~ (done).
   2. ~~Vercel `ARGUS_API_TOKEN`~~ (done).
   3. Google Cloud OAuth client: add `https://argus-watcher.vercel.app/api/gmail/callback` as a redirect URI.
-  4. Supabase Auth URL configuration: Site URL `https://argus-watcher.vercel.app`, and add it to the redirect URLs
-     (keep localhost).
+  4. Supabase Auth URL configuration: Site URL `https://argus-watcher.vercel.app`, and redirect URLs
+     `https://argus-watcher.vercel.app/**` and `http://localhost:3000/**`.
+     - For the demo, turn off "Confirm email": Supabase's built-in email sender only delivers to members of the
+       Supabase team.
+     - Optional: set the "Confirm signup" template link to
+       `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, so confirming works on any device.
+     - `APP_URL` on Vercel was fixed to the live address on 2026-09-26; it had been localhost.
   5. Optional: mark the Vercel secrets as "Sensitive". In the extension options, point to the Render URL and token.
 - **What still works while Render sleeps:** the landing page, auth, dashboard stats, history and evidence pages, the
   Family page, and Gmail connect. Everything that scans pauses until the engine wakes.
@@ -618,6 +628,8 @@ cd web; npm install; cd ..
   "Family alerts by SMS and WhatsApp", "Extension in the stores".
 - **Telegram:** family alerts are unit- and browser-tested without a bot. The live Telegram round trip (QR, then
   Start, then welcome, then alert) still needs a check with the real bot token and a phone.
+- **Signup emails:** Supabase's built-in sender only mails the project's team members, a few per hour. Public
+  signups need a custom SMTP service, or "Confirm email" turned off.
 - **Machine learning:**
   - The text model's Indian coverage rests on ~90 hand-written examples, not a real Indian dataset.
   - Social-engineering pleas with no spammy wording ("stuck abroad, send money") can slip past it.
