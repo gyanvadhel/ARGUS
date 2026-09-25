@@ -48,3 +48,17 @@ async def test_links_on_the_same_host_are_checked_once():
     with respx.mock:
         v = await check_text("See http://evil.xyz/a and also http://evil.xyz/b")
     assert [s.source for s in v.signals].count("Link: evil.xyz") == 1
+
+
+from tests.test_url import live_feeds, web  # noqa: E402,F401 - shared fixtures: fake feeds and a fake internet
+
+
+async def test_text_whose_links_all_go_to_verified_sites_is_verified(live_feeds, web):
+    v = await check_text("See you at noon, the place is on https://www.google.com/")
+    assert (v.level, v.verified) == ("SAFE", True)
+
+
+async def test_a_famous_link_does_not_vouch_for_a_scam_text(live_feeds, web):
+    v = await check_text("URGENT: your account has been suspended. Verify your password at https://www.google.com/ "
+                         "or you will be arrested.")
+    assert v.verified is False and v.score >= 60

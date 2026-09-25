@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 from argus_api import config
 from argus_api.checkers.email import check_email
 from argus_api.checkers.file import MAX_FILE_BYTES, check_file
-from argus_api.checkers.phone import Community, check_phone, normalize
+from argus_api.checkers.phone import Community, normalize, scan_phone
 from argus_api.checkers.text import check_text
 from argus_api.checkers.url import check_url
 from argus_api.detect import detect_kind
@@ -60,7 +60,7 @@ async def dispatch(kind: Kind, text: str, community: Community) -> Verdict:
     if kind == "email":
         return await check_email(text)
     if kind == "phone":
-        return check_phone(text, community)
+        return await scan_phone(text, community)
     return await check_text(text)
 
 

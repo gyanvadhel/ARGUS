@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import time
 
 import httpx
 
@@ -90,9 +91,18 @@ async def virustotal_file(client: httpx.AsyncClient, sha256: str) -> Signal:
         return Signal(source="VirusTotal", status="unknown", score=0, weight=0, summary="VirusTotal has never seen this file")
     r.raise_for_status()
     attrs = r.json()["data"]["attributes"]
+    stats = attrs.get("last_analysis_stats") or {}
     label = (attrs.get("popular_threat_classification") or {}).get("suggested_threat_label")
-    return vt_stats_signal("VirusTotal", attrs.get("last_analysis_stats") or {}, "file",
-                           {"threat_type": label} if label else None)
+    signal = vt_stats_signal("VirusTotal", stats, "file", {"threat_type": label} if label else None)
+    # No engine flags it AND VirusTotal has known it for a month: malware is usually caught within days,
+    # so a long-known clean file is positive evidence. A brand-new clean file is not (new malware looks the same).
+    analyzed = sum(int(stats.get(k, 0)) for k in ("malicious", "suspicious", "undetected", "harmless"))
+    known_days = int((time.time() - attrs["first_submission_date"]) / 86400) if attrs.get("first_submission_date") else 0
+    if stats.get("malicious", 0) == 0 and stats.get("suspicious", 0) == 0 and analyzed >= 50 and known_days >= 30:
+        years = known_days // 365
+        age = f"{years} year{'s' if years != 1 else ''}" if years else f"{known_days} days"
+        return signal.model_copy(update={"trust": 0.6, "summary": f"{signal.summary}, and VirusTotal has known it for {age}"})
+    return signal
 
 
 async def malwarebazaar(client: httpx.AsyncClient, sha256: str) -> Signal:
@@ -121,6 +131,9 @@ async def check_file(filename: str, data: bytes) -> Verdict:
             guarded("VirusTotal", virustotal_file(client, sha256)),
             guarded("MalwareBazaar", malwarebazaar(client, sha256)),
         )
+    if local.status != "clean":
+        # A good reputation vouches for what's inside, never for a file that's dressed up to trick you.
+        remote = [s.model_copy(update={"trust": 0.0}) for s in remote]
     signals = [local, *remote]
     text = _as_text(data)
     if text:

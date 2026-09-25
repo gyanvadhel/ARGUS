@@ -19,7 +19,7 @@ TRUST_DAMPING = 0.7
 VERIFIED_TRUST = 0.5
 
 RECOMMENDATIONS = {
-    "SAFE_VERIFIED": "Looks safe. Argus found positive evidence this is legitimate and no red flags.",
+    "SAFE_VERIFIED": "Looks safe. Argus found positive evidence this is legitimate, and nothing serious against it.",
     "SAFE": "No red flags found. That isn't a guarantee: stay careful with anything that asks for money or codes.",
     "LOW/MODERATE": "Proceed with caution. Don't share sensitive information unless you can verify the source independently.",
     "SUSPICIOUS": "Treat this as suspicious. Don't click links, share codes, or send money. Verify through an official channel first.",

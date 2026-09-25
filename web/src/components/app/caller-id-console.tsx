@@ -16,7 +16,7 @@ import { SignalCard } from "./signal-card";
 type Found = Extract<LookupResult, { ok: true }>;
 
 const SAMPLES = [
-  { label: "Known scam line", value: "1-800-555-0142" },
+  { label: "Reported robocaller", value: "+1 877-556-9255" },
   { label: "One-ring trap", value: "+232 76 123456" },
   { label: "Look-alike area code", value: "+1 876 203 4567" },
   { label: "Faked caller ID", value: "+999 123 4567" },

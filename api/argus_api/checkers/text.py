@@ -4,9 +4,12 @@ from __future__ import annotations
 import asyncio
 import re
 
+import phonenumbers
+
 from argus_api.aggregate import combine, verdict_as_signal
 from argus_api.checkers.phone import blocklist_signal, normalize
 from argus_api.checkers.url import check_url, host_of
+from argus_api.intel.fcc import fcc_signal
 from argus_api.models import Signal, Verdict
 from argus_api.risk_engine import THREAT_TYPE_BY_LABEL, get_engine
 
@@ -33,8 +36,16 @@ def extract_phones(text: str, limit: int = 2) -> list[str]:
     return found[:limit]
 
 
-def phone_signals(text: str) -> list[Signal]:
-    return [blocklist_signal(n).model_copy(update={"source": f"Phone: {n}"}) for n in extract_phones(text)]
+async def phone_signals(text: str) -> list[Signal]:
+    """The ARGUS blocklist and the FCC's complaint records for every phone number in a message."""
+    numbers = extract_phones(text)
+    complaints = await asyncio.gather(*(fcc_signal(phonenumbers.parse(n, None)) for n in numbers))
+    signals: list[Signal] = []
+    for number, fcc in zip(numbers, complaints):
+        signals.append(blocklist_signal(number).model_copy(update={"source": f"Phone: {number}"}))
+        if fcc.status in ("clean", "suspicious", "malicious"):  # numbers the FCC doesn't cover add nothing
+            signals.append(fcc.model_copy(update={"source": f"Phone: {number} (FCC)"}))
+    return signals
 
 
 def unique_hosts(urls: list[str]) -> list[str]:
@@ -120,9 +131,13 @@ def local_text_signals(text: str) -> list[Signal]:
 
 
 async def check_text(text: str) -> Verdict:
-    signals = local_text_signals(text) + phone_signals(text)
     urls = unique_hosts(extract_urls(text))
-    if urls:
-        verdicts = await asyncio.gather(*(check_url(u) for u in urls))
-        signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
+    phones, verdicts = await asyncio.gather(phone_signals(text), asyncio.gather(*(check_url(u) for u in urls)))
+    signals = local_text_signals(text) + phones
+    signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
+    # A message vouched for by its links: every one goes to a verified site, and nothing else looks off.
+    if verdicts and all(v.verified for v in verdicts) and not any(s.status in ("suspicious", "malicious") for s in signals):
+        hosts = ", ".join(host_of(v.subject) for v in verdicts)
+        signals.append(Signal(source="Links in this message", status="clean", score=0, weight=0.3, trust=0.6,
+                              summary=f"Every link goes to a verified site ({hosts})"))
     return combine("text", text[:120], signals)

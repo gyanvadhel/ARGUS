@@ -10,16 +10,32 @@ from email.utils import parseaddr
 
 from argus_api.aggregate import combine, verdict_as_signal
 from argus_api.checkers.text import extract_urls, ml_signal, phone_signals, rules_signal, unique_hosts
-from argus_api.checkers.url import BRAND_DOMAINS, brand_name, check_url, host_of
+from argus_api.checkers.url import BRAND_DOMAINS, brand_name, check_url, host_of, is_popular
+from argus_api.intel.brands import is_official
 from argus_api.models import Signal, Verdict
 
 _HREF = re.compile(r"""href\s*=\s*["'](https?://[^"']+)""", re.I)
 _TAG = re.compile(r"<[^>]+>")
 _ADDRESS = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Anyone can open an account on these and pass SPF/DKIM/DMARC, so they never vouch for a sender.
+FREE_MAIL = {"gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk", "ymail.com", "rocketmail.com",
+             "outlook.com", "hotmail.com", "live.com", "msn.com", "aol.com", "icloud.com", "me.com", "mac.com",
+             "proton.me", "protonmail.com", "pm.me", "gmx.com", "gmx.net", "mail.com", "yandex.com", "yandex.ru",
+             "zoho.com", "zohomail.in", "rediffmail.com", "tutanota.com", "fastmail.com", "hey.com", "qq.com", "163.com"}
 
 
 def _domain(address: str) -> str:
     return address.rsplit("@", 1)[-1].lower() if "@" in address else ""
+
+
+def sender_reputation(domain: str) -> str | None:
+    """Why a sending domain is trustworthy, if it is: an official brand domain or a well-known site."""
+    if not domain or domain in FREE_MAIL:
+        return None
+    brand = next((b for b in BRAND_DOMAINS if is_official(domain, b)), None)
+    if brand:
+        return f"the official {brand_name(brand)} domain"
+    return "a well-known site" if is_popular(domain) else None
 
 
 def parse_auth_results(msg: EmailMessage) -> dict[str, str]:
@@ -70,14 +86,19 @@ def header_signal(msg: EmailMessage) -> Signal:
         reasons.append(f"Bounce address uses a different domain ({bounce_domain})")
 
     score = min(points, 100)
+    authenticated = not reasons and all(v == "pass" for v in auth.values())
+    # Passing authentication proves who sent it, not that they're good: only a known sender earns trust.
+    known = sender_reputation(from_domain) if authenticated else None
     if reasons:
         summary = reasons[0]
-    elif all(v == "pass" for v in auth.values()):
+    elif known:
+        summary = f"Really from {from_domain}, {known}: SPF, DKIM and DMARC all passed"
+    elif authenticated:
         summary = "SPF, DKIM and DMARC all passed"
     else:
         summary = "No sender red flags found"
     return Signal(source="Sender authentication", status="suspicious" if score >= 30 else "clean", score=score,
-                  weight=1.2, summary=summary,
+                  weight=1.2, trust=0.8 if known else 0.0, summary=summary,
                   evidence={"auth": auth, "from": from_addr, "reply_to": reply_domain or None,
                             "reasons": reasons, "threat_type": "Phishing / spoofing"})
 
@@ -104,9 +125,8 @@ async def check_email(raw: str) -> Verdict:
     msg = Parser(policy=policy.default).parsestr(raw.strip())
     body, links = extract_body(msg)
     text = body or raw
-    signals = [header_signal(msg), ml_signal(text), rules_signal(text), *phone_signals(text)]
     urls = unique_hosts(links + extract_urls(text))[:3]
-    if urls:
-        verdicts = await asyncio.gather(*(check_url(u) for u in urls))
-        signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
+    phones, verdicts = await asyncio.gather(phone_signals(text), asyncio.gather(*(check_url(u) for u in urls)))
+    signals = [header_signal(msg), ml_signal(text), rules_signal(text), *phones]
+    signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
     return combine("email", str(msg.get("Subject") or "Pasted email"), signals)

@@ -1,7 +1,18 @@
 import { timeAgo } from "@/lib/format";
 import type { FeedStatus } from "@/lib/types";
 
-const BUILT_IN = ["Scam model", "Phrase rules", "Link rules", "Look-alike check", "Live page check", "Domain age", "Number validation", "File inspection"];
+const BUILT_IN = [
+  "Scam model",
+  "Phrase rules",
+  "Link rules",
+  "Look-alike check",
+  "Live page check",
+  "Domain age",
+  "Sender checks",
+  "Number validation",
+  "FCC complaints",
+  "File inspection",
+];
 
 const FEED_NAMES: Record<string, string> = {
   urlhaus: "URLhaus malware links",

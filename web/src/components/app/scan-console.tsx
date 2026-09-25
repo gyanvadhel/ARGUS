@@ -27,17 +27,18 @@ Authentication-Results: mx.example.com; spf=fail smtp.mailfrom=paypa1-security.c
 
 Dear customer, we detected an unusual sign-in. Click here to verify your password immediately: http://paypal-security-alert.net/login`,
   },
-  { label: "Blocklisted caller", input: "1-800-555-0142" },
+  { label: "Reported robocaller", input: "+1 877-556-9255" },
   { label: "EICAR test file", eicar: true },
   { label: "Safe message", input: "Hey are we still on for lunch tomorrow at noon?" },
 ];
 
+// Everything runs at once; these name what's being asked while you wait.
 const STAGES = [
   "Reading the input…",
-  "Querying VirusTotal…",
-  "Checking URLhaus and MalwareBazaar…",
-  "Asking Google Safe Browsing…",
-  "Looking up domain records…",
+  "Checking live phishing and malware feeds…",
+  "Visiting the site safely…",
+  "Looking up domain records and complaints…",
+  "Asking VirusTotal…",
   "Running the Argus model…",
   "Weighing the evidence…",
 ];

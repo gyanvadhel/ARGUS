@@ -70,3 +70,34 @@ async def test_binary_file_skips_text_model():
 async def test_eicar_file_is_high_risk_without_any_keys():
     v = await f.check_file("eicar.com", f.eicar_bytes())
     assert v.level == "HIGH RISK"
+
+
+def _vt_clean(first_seen_days_ago):
+    import time
+    stats = {"malicious": 0, "suspicious": 0, "undetected": 64, "harmless": 0, "type-unsupported": 8}
+    return {"data": {"attributes": {"last_analysis_stats": stats,
+                                    "first_submission_date": int(time.time() - first_seen_days_ago * 86400)}}}
+
+
+async def test_long_known_file_with_no_detections_is_vouched_for(monkeypatch):
+    monkeypatch.setenv("VIRUSTOTAL_API_KEY", "k")
+    with respx.mock:
+        respx.get(url__startswith="https://www.virustotal.com/api/v3/files/").respond(json=_vt_clean(900))
+        v = await f.check_file("notes.txt", b"hello world")
+    assert (v.level, v.verified) == ("SAFE", True)
+
+
+async def test_brand_new_file_with_no_detections_is_not_vouched_for(monkeypatch):
+    monkeypatch.setenv("VIRUSTOTAL_API_KEY", "k")
+    with respx.mock:  # zero detections on a days-old file is how new malware looks too
+        respx.get(url__startswith="https://www.virustotal.com/api/v3/files/").respond(json=_vt_clean(2))
+        v = await f.check_file("notes.txt", b"hello world")
+    assert v.verified is False
+
+
+async def test_a_good_reputation_does_not_excuse_a_disguised_file(monkeypatch):
+    monkeypatch.setenv("VIRUSTOTAL_API_KEY", "k")
+    with respx.mock:  # a known-clean program renamed to look like a PDF is still a trick
+        respx.get(url__startswith="https://www.virustotal.com/api/v3/files/").respond(json=_vt_clean(900))
+        v = await f.check_file("invoice.pdf.exe", b"MZ\x90\x00" + b"\x00" * 200)
+    assert v.verified is False and v.score >= 60

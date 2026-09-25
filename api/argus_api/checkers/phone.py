@@ -8,6 +8,7 @@ from phonenumbers import PhoneNumber, PhoneNumberFormat, PhoneNumberType, carrie
 from pydantic import BaseModel, Field
 
 from argus_api.aggregate import combine
+from argus_api.intel.fcc import fcc_signal
 from argus_api.models import Signal, Verdict
 from argus_api.risk_engine import get_engine
 
@@ -202,8 +203,7 @@ def sightings_signal(c: Community) -> Signal:
     return Signal(source=source, status="suspicious", score=55, weight=1.0, summary=summary, evidence=evidence)
 
 
-def check_phone(raw: str, community: Community | None = None, community_reports: int = 0) -> Verdict:
-    c = community or Community(reports=community_reports)
+def _local_signals(raw: str, c: Community) -> tuple[PhoneNumber | None, str, list[Signal]]:
     parsed, reason = _parse_with_reason(raw)
     e164 = phonenumbers.format_number(parsed, PhoneNumberFormat.E164) if parsed else None
     signals = [
@@ -213,4 +213,17 @@ def check_phone(raw: str, community: Community | None = None, community_reports:
         community_signal(c),
         sightings_signal(c),
     ]
-    return combine("phone", e164 or raw.strip(), signals)
+    return parsed, e164 or raw.strip(), signals
+
+
+def check_phone(raw: str, community: Community | None = None, community_reports: int = 0) -> Verdict:
+    """Instant checks only: validation, callback traps, the blocklist, community reports and sightings."""
+    _, subject, signals = _local_signals(raw, community or Community(reports=community_reports))
+    return combine("phone", subject, signals)
+
+
+async def scan_phone(raw: str, community: Community | None = None) -> Verdict:
+    """Caller ID: the instant checks plus the FCC's complaint records for US and Canadian numbers."""
+    parsed, subject, signals = _local_signals(raw, community or Community())
+    signals.append(await fcc_signal(parsed))
+    return combine("phone", subject, signals)

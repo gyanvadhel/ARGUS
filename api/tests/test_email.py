@@ -61,3 +61,31 @@ async def test_links_in_html_are_scanned():
     with respx.mock:
         v = await check_email(HTML_ONLY)
     assert any(s.source == "Link: paypal-security-alert.net" for s in v.signals)
+
+
+RECEIPT = """From: PayPal <service@paypal.com>
+To: you@example.com
+Subject: Your receipt
+Authentication-Results: mx.google.com; spf=pass smtp.mailfrom=paypal.com; dkim=pass header.d=paypal.com; dmarc=pass
+
+You sent $20.00 USD to Alice. Thanks for using PayPal."""
+
+STRANGER_ON_GMAIL = RECEIPT.replace("PayPal <service@paypal.com>", "Dave <dave.prizes@gmail.com>") \
+    .replace("paypal.com", "gmail.com")
+
+
+async def test_authenticated_mail_from_a_well_known_sender_is_verified():
+    v = await check_email(RECEIPT)
+    assert (v.level, v.verified) == ("SAFE", True)
+    sender = next(s for s in v.signals if s.source == "Sender authentication")
+    assert sender.trust >= 0.5 and "paypal.com" in sender.summary
+
+
+async def test_authentication_alone_does_not_vouch_for_a_stranger():
+    v = await check_email(CLEAN)  # passes SPF/DKIM/DMARC, but nobody knows example.com
+    assert (v.level, v.verified) == ("SAFE", False)
+
+
+async def test_free_mail_accounts_are_never_vouched_for():
+    v = await check_email(STRANGER_ON_GMAIL)  # anyone can pass authentication as gmail.com
+    assert v.verified is False
