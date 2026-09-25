@@ -34,11 +34,13 @@ function tick(now: number) {
   frame = eyes.size ? requestAnimationFrame(tick) : 0;
 }
 
-export function WatchingEye({ className, strokeWidth = 1.25 }: { className?: string; strokeWidth?: number }) {
+/** `logo` gives the iris the brand's violet-to-coral colour, matching the app icon; it still watches and blinks. */
+export function WatchingEye({ className, strokeWidth = 1.25, logo = false }: { className?: string; strokeWidth?: number; logo?: boolean }) {
   const root = useRef<SVGSVGElement>(null);
   const iris = useRef<SVGGElement>(null);
   const lid = useRef<SVGGElement>(null);
   const clip = `${useId().replace(/[^a-zA-Z0-9-]/g, "")}-almond`;
+  const gradient = `${clip}-iris`;
 
   useEffect(() => {
     if (!root.current || !iris.current || !lid.current) return;
@@ -64,12 +66,25 @@ export function WatchingEye({ className, strokeWidth = 1.25 }: { className?: str
         <clipPath id={clip}>
           <path d={ALMOND} />
         </clipPath>
+        {logo && (
+          <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#6d6bff" />
+            <stop offset="0.5" stopColor="#a66bff" />
+            <stop offset="1" stopColor="#ff8a7a" />
+          </linearGradient>
+        )}
       </defs>
       <g ref={lid}>
-        <path d={ALMOND} className="eye-outline" strokeWidth={strokeWidth} vectorEffect="non-scaling-stroke" />
+        <path
+          d={ALMOND}
+          className="eye-outline"
+          strokeWidth={strokeWidth}
+          vectorEffect="non-scaling-stroke"
+          style={logo ? { opacity: 1 } : undefined}
+        />
         <g clipPath={`url(#${clip})`}>
           <g ref={iris}>
-            <circle r="4.3" className="eye-iris" />
+            <circle r="4.3" className="eye-iris" style={logo ? { fill: `url(#${gradient})` } : undefined} />
             <circle r="1.7" className="eye-pupil" />
             <circle cx="-1.3" cy="-1.4" r="0.75" className="eye-glint" />
           </g>

@@ -8,7 +8,7 @@ export function Nav({ signedIn }: { signedIn: boolean }) {
     <header className="fixed inset-x-0 top-0 z-40 bg-linear-to-b from-background/90 to-transparent">
       <div className="mx-auto flex h-20 max-w-[1600px] items-center justify-between px-6 sm:px-10">
         <Link href="/" className="flex items-center gap-3 text-foreground">
-          <WatchingEye className="h-5 w-8 text-foreground" strokeWidth={1.6} />
+          <WatchingEye logo className="h-5 w-8 text-foreground" strokeWidth={1.6} />
           <span className="font-display text-2xl">Argus</span>
         </Link>
         <nav className="hidden items-center gap-9 text-sm text-foreground/80 md:flex">

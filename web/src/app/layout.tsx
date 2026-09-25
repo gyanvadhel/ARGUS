@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -7,10 +7,19 @@ import "./globals.css";
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const description = "Scan links, files, emails, texts and phone numbers against real threat intelligence.";
+
 export const metadata: Metadata = {
+  // Absolute URLs for the link preview card once deployed.
+  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
   title: "Argus: the watcher that never sleeps",
-  description: "Scan links, files, emails, texts and phone numbers against real threat intelligence.",
+  description,
+  applicationName: "Argus",
+  openGraph: { title: "Argus: the watcher that never sleeps", description, siteName: "Argus", type: "website" },
+  twitter: { card: "summary_large_image", title: "Argus: the watcher that never sleeps", description },
 };
+
+export const viewport: Viewport = { themeColor: "#08080a" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

@@ -26,7 +26,7 @@ export function Sidebar({ name, email }: { name: string; email: string }) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border/60 bg-background/40 px-4 py-6 backdrop-blur-xl md:flex">
       <Link href="/" className="flex items-center gap-3 px-2">
-        <WatchingEye className="h-5 w-8 text-foreground" strokeWidth={1.6} />
+        <WatchingEye logo className="h-5 w-8 text-foreground" strokeWidth={1.6} />
         <span className="font-display text-2xl">Argus</span>
       </Link>
       <nav className="mt-10 flex flex-col gap-1">
