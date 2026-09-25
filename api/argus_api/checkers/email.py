@@ -12,6 +12,7 @@ from argus_api.aggregate import combine, verdict_as_signal
 from argus_api.checkers.text import extract_urls, ml_signal, phone_signals, rules_signal, unique_hosts
 from argus_api.checkers.url import BRAND_DOMAINS, brand_name, check_url, host_of, is_popular, visit_decision
 from argus_api.intel.brands import is_official
+from argus_api.ml.scam_text import LONG_TEXT_THRESHOLD
 from argus_api.models import Signal, Verdict
 
 _HREF = re.compile(r"""href\s*=\s*["'](https?://[^"']+)""", re.I)
@@ -130,6 +131,6 @@ async def check_email(raw: str, mailbox: str | None = None) -> Verdict:
     urls = unique_hosts(links + extract_urls(text))[:3]
     checks = (check_url(u, visit_decision(u, mailbox)) for u in urls)
     phones, verdicts = await asyncio.gather(phone_signals(text), asyncio.gather(*checks))
-    signals = [header_signal(msg), ml_signal(text), rules_signal(text), *phones]
+    signals = [header_signal(msg), ml_signal(text, threshold=LONG_TEXT_THRESHOLD), rules_signal(text), *phones]
     signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
     return combine("email", str(msg.get("Subject") or "Pasted email"), signals)

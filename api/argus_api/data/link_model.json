@@ -1,0 +1,54 @@
+{
+  "trained_on": "2026-09-26",
+  "phishing_domains": 153433,
+  "legitimate_domains": 450000,
+  "sources": {
+    "phishing": "Phishing.Database active domains + OpenPhish live feed, one per registered domain (sampled)",
+    "legitimate": "Tranco list of the 1,000,000 most visited sites (sampled across all ranks)",
+    "left_out": "pages on publish-anything platforms, and domains on both lists"
+  },
+  "reads": "the registered domain only, as 3-5 letter pieces hashed into 2^20 features; logistic regression",
+  "held_out": {
+    "phishing": 30408,
+    "legitimate": 89980,
+    "auc": 0.8662,
+    "by_threshold": {
+      "0.5": {
+        "precision_on_balanced_test": 0.6186,
+        "recall": 0.7064,
+        "false_alarm_rate": 0.1472,
+        "false_alarm_rate_ranks_500k_1m": 0.1591
+      },
+      "0.7": {
+        "precision_on_balanced_test": 0.7915,
+        "recall": 0.5412,
+        "false_alarm_rate": 0.0482,
+        "false_alarm_rate_ranks_500k_1m": 0.0533
+      },
+      "0.8": {
+        "precision_on_balanced_test": 0.8801,
+        "recall": 0.4513,
+        "false_alarm_rate": 0.0208,
+        "false_alarm_rate_ranks_500k_1m": 0.023
+      },
+      "0.9": {
+        "precision_on_balanced_test": 0.9557,
+        "recall": 0.3375,
+        "false_alarm_rate": 0.0053,
+        "false_alarm_rate_ranks_500k_1m": 0.0059
+      },
+      "0.95": {
+        "precision_on_balanced_test": 0.9851,
+        "recall": 0.2568,
+        "false_alarm_rate": 0.0013,
+        "false_alarm_rate_ranks_500k_1m": 0.0014
+      },
+      "0.98": {
+        "precision_on_balanced_test": 0.9969,
+        "recall": 0.18,
+        "false_alarm_rate": 0.0002,
+        "false_alarm_rate_ranks_500k_1m": 0.0002
+      }
+    }
+  }
+}

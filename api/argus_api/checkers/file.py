@@ -12,6 +12,7 @@ from argus_api.aggregate import combine
 from argus_api.checkers.text import ml_signal
 from argus_api.checkers.vt import VT_BASE, vt_rate_limited, vt_stats_signal
 from argus_api.http import guarded, make_client, unavailable
+from argus_api.ml.scam_text import LONG_TEXT_THRESHOLD
 from argus_api.models import Signal, Verdict
 
 MAX_FILE_BYTES = 32 * 1024 * 1024
@@ -137,5 +138,6 @@ async def check_file(filename: str, data: bytes) -> Verdict:
     signals = [local, *remote]
     text = _as_text(data)
     if text:
-        signals.append(ml_signal(text[:5000]).model_copy(update={"source": "ARGUS ML (file contents)", "weight": 0.5}))
+        signals.append(ml_signal(text[:5000], threshold=LONG_TEXT_THRESHOLD)
+                       .model_copy(update={"source": "ARGUS ML (file contents)", "weight": 0.5}))
     return combine("file", filename or "upload", signals)

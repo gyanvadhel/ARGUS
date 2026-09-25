@@ -1,4 +1,5 @@
 import hmac
+import threading
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -15,6 +16,7 @@ from argus_api.checkers.text import check_text
 from argus_api.checkers.url import check_url, quick_check_url
 from argus_api.detect import detect_kind
 from argus_api.intel import feeds, netcheck
+from argus_api.ml import scam_text
 from argus_api.models import Kind, Verdict
 
 
@@ -25,6 +27,8 @@ async def lifespan(_: FastAPI):
         feeds.store.load_from_cache()
     else:
         feeds.store.start()
+        # Train the scam-text model now, so the first message checked after a cold start isn't kept waiting.
+        threading.Thread(target=scam_text.model, name="warm-scam-model", daemon=True).start()
     yield
 
 

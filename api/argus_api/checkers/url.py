@@ -1,7 +1,8 @@
 """Link analysis.
 
 Every link is judged on:
-  1. the address itself: brand impersonation, bait words, free-hosting platforms, look-alike characters
+  1. the address itself: brand impersonation, bait words, free-hosting platforms, look-alike characters,
+     and Argus's own model of what phishing domain names look like (argus_api/ml/phish_link.py)
   2. live threat feeds: URLhaus (malware), OpenPhish (phishing), Phishing.Database (phishing domains)
   3. popularity (Tranco top sites) as positive evidence, and look-alikes of the 10,000 most visited sites
   4. a live check: does the domain exist, is its certificate valid, where do redirects lead, and what the
@@ -27,6 +28,7 @@ from argus_api.http import guarded, make_client, unavailable
 from argus_api.intel import feeds, netcheck
 from argus_api.intel.brands import BRAND_DOMAINS, brand_name, is_official
 from argus_api.intel.page import analyze_page
+from argus_api.ml import phish_link
 from argus_api.models import Signal, Verdict
 from argus_api.risk_engine import STRONG_INDICATORS, get_engine
 
@@ -603,9 +605,34 @@ async def domain_age(client: httpx.AsyncClient, host: str) -> Signal:
                   evidence=evidence)
 
 
+LINK_MODEL = "ARGUS ML (link)"
+
+
+def link_model_signal(host: str) -> Signal | None:
+    """Argus's phishing-name model, as a careful second opinion. Sites with a reputation are skipped (it speaks
+    for them), and so are pages on shared platforms, whose address is mostly the platform's name."""
+    if not host or _is_ip(host) or platform_of(host) or site_rank(host) is not None \
+            or any(is_official(host, b) for b in BRAND_DOMAINS):
+        return None
+    domain = registrable_domain(host)
+    p = phish_link.phishing_probability(domain)
+    if p is None:
+        return None
+    evidence = {"domain": domain, "phishing_probability": round(p, 3), "threshold": phish_link.THRESHOLD}
+    if p >= phish_link.THRESHOLD:
+        return Signal(source=LINK_MODEL, status="suspicious", score=60, weight=0.8,
+                      summary=f"Its name looks like a phishing site's ({p:.0%} likely)",
+                      evidence={**evidence, "threat_type": "Phishing"})
+    return Signal(source=LINK_MODEL, status="clean", score=0, weight=0.3,
+                  summary="Its name isn't a clear match for known phishing domains", evidence=evidence)
+
+
 # --- putting it together -----------------------------------------------------------------------------
 def address_signals(url: str, host: str, after_redirect: bool = False) -> list[Signal]:
     signals = [heuristics(url), typosquat_signal(host), popularity_signal(host), local_intel(host)]
+    model = link_model_signal(host)
+    if model:
+        signals.append(model)
     if after_redirect:
         return [_after(s) for s in signals] + feed_signals(url, host, prefix=AFTER)
     return signals + feed_signals(url, host)

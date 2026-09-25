@@ -10,8 +10,9 @@ from argus_api.aggregate import combine, verdict_as_signal
 from argus_api.checkers.phone import blocklist_signal, normalize
 from argus_api.checkers.url import check_url, host_of
 from argus_api.intel.fcc import fcc_signal
+from argus_api.ml import scam_text
 from argus_api.models import Signal, Verdict
-from argus_api.risk_engine import THREAT_TYPE_BY_LABEL, get_engine
+from argus_api.risk_engine import get_engine
 
 _URL_IN_TEXT = re.compile(r"(?:https?://|www\.)[^\s<>\"')]+", re.I)
 _BARE_DOMAIN = re.compile(
@@ -69,25 +70,18 @@ def extract_urls(text: str, limit: int = 3) -> list[str]:
     return found[:limit]
 
 
-def ml_signal(text: str) -> Signal:
-    engine = get_engine()
-    proba = dict(zip(engine.classes_, engine.classifier.predict_proba(engine.vectorizer.transform([text]))[0]))
-    label = max(proba, key=proba.get)
-    confidence = float(proba[label])
-    # With 5 classes and a small training set, probability mass spreads evenly over the
-    # four threat classes, so "1 - P(Safe)" overstates risk. Compare the strongest threat
-    # class head-to-head with Safe instead.
-    top_threat = max(p for c, p in proba.items() if c != "Safe")
-    safe = proba.get("Safe", 0.0)
-    score = 100.0 * top_threat / (top_threat + safe) if (top_threat + safe) else 0.0
+def ml_signal(text: str, threshold: float = scam_text.THRESHOLD) -> Signal:
+    """Argus's scam-text model (argus_api/ml/scam_text.py), trained on thousands of real messages."""
+    p = scam_text.scam_probability(text)
+    scam = p >= threshold
     return Signal(
         source="ARGUS ML model",
-        status="suspicious" if score >= 50 else "clean",
-        score=round(score),
+        status="suspicious" if scam else "clean",
+        score=round(100 * p),
         weight=1.0,
-        summary=f"Classified as {label} ({confidence:.0%} confidence)",
-        evidence={"label": label, "confidence": round(confidence, 2),
-                  "threat_type": THREAT_TYPE_BY_LABEL.get(label, "Unknown")},
+        summary=f"Reads like a scam or spam message ({p:.0%} likely)" if scam
+        else f"Reads like an ordinary message ({p:.0%} scam-like; it flags from {threshold:.0%})",
+        evidence={"scam_probability": round(p, 3), "threshold": threshold, "threat_type": "Scam or spam message"},
     )
 
 
