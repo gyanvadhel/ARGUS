@@ -1,0 +1,66 @@
+text,label
+"Hey are we still on for lunch tomorrow at noon?",Safe
+"Thanks for the update, I'll review the document tonight.",Safe
+"Happy birthday! Hope you have a wonderful day.",Safe
+"Can you send me the meeting notes from yesterday?",Safe
+"Your package has been delivered to your front porch.",Safe
+"Reminder: your dentist appointment is on Thursday at 3pm.",Safe
+"Great job on the presentation today, the team loved it.",Safe
+"Let's catch up this weekend, it's been a while.",Safe
+"The weather looks nice this weekend, want to go hiking?",Safe
+"I attached the invoice for last month, let me know if you have questions.",Safe
+"Your Amazon order #4471 has shipped and will arrive Friday.",Safe
+"Mom, call me when you get a chance, nothing urgent.",Safe
+"Your subscription renewal receipt is attached for your records.",Safe
+"Team meeting moved to 2pm, same room as always.",Safe
+"Congrats on the new job! So happy for you.",Safe
+"Can you pick up milk on your way home?",Safe
+"Your flight itinerary for next week is confirmed.",Safe
+"Thanks for dinner last night, it was great seeing you.",Safe
+"The library book you requested is ready for pickup.",Safe
+"Just checking in, how's the project going?",Safe
+"WINNER!! You have been selected for a FREE cruise, click now to claim!",Spam
+"Buy cheap watches now, 90% off limited time only!!!",Spam
+"Congratulations you won a $1000 gift card, claim your prize today",Spam
+"Hot singles in your area want to meet you tonight",Spam
+"Lose 20 pounds in 2 weeks with this one weird trick",Spam
+"Get rich quick working from home, no experience needed, click here",Spam
+"FREE FREE FREE limited offer act now before it's gone",Spam
+"You've been chosen for an exclusive discount, click the link now",Spam
+"Earn $5000 a week from your phone, no skills required",Spam
+"Claim your free iPhone now, offer expires in 1 hour",Spam
+"Urgent: your account has been suspended, verify your identity immediately by clicking this link",Phishing
+"Your PayPal account has unusual activity, confirm your password now to avoid suspension",Phishing
+"Bank Alert: unauthorized login detected, verify your account and OTP code immediately",Phishing
+"We could not process your payment, please update your card details at this link now",Phishing
+"Your Apple ID has been locked, click here to verify your identity and password",Phishing
+"Security Notice: enter your one-time passcode to confirm it's really you",Phishing
+"Your Netflix account will be suspended, update your billing information within 24 hours",Phishing
+"Amazon: your account access has been limited, verify your details to restore access",Phishing
+"Microsoft Alert: unusual sign-in activity, confirm your password to secure your account",Phishing
+"Dear customer, click here to verify your bank account or it will be closed today",Phishing
+"This is the IRS, you owe back taxes, pay immediately with gift cards or face arrest",Fraud
+"Your grandson has been arrested and needs bail money wired immediately, don't tell anyone",Fraud
+"Congratulations you won the lottery, send a processing fee to claim your $500,000 prize",Fraud
+"This is tech support, we detected a virus on your computer, give us remote access now",Fraud
+"Your social security number has been suspended due to suspicious activity, call this number now",Fraud
+"We need you to purchase gift cards immediately to resolve this legal matter",Fraud
+"Final notice: pay this debt today or a warrant will be issued for your arrest",Fraud
+"Investment opportunity guaranteed 300% returns in one week, wire funds today",Fraud
+"Your utility bill is overdue, pay immediately with a prepaid card or service will be cut",Fraud
+"This is the sheriff's office, you missed jury duty, pay a fine now to avoid arrest",Fraud
+"Hi it's your CEO, I need you to buy gift cards for a client, keep this confidential",Social-Engineering
+"This is IT support, I need your password to fix an urgent server issue",Social-Engineering
+"Don't tell your family about this call, it's very important you act alone",Social-Engineering
+"I'm calling from your bank's fraud department, please confirm your card number and PIN",Social-Engineering
+"We noticed suspicious activity, I need you to stay on the line and not hang up",Social-Engineering
+"This is a matter of national security, you cannot discuss this call with anyone",Social-Engineering
+"I'm your new manager, please transfer these funds urgently before end of day, keep it quiet",Social-Engineering
+"For verification purposes I need your date of birth and full social security number",Social-Engineering
+"Please don't involve your family, this is confidential and time sensitive",Social-Engineering
+"I need remote access to your computer right now to prevent data loss",Social-Engineering
+"Let's grab coffee sometime next week if you're free.",Safe
+"Attached is the quarterly report you asked for.",Safe
+"Your prescription is ready for pickup at the pharmacy.",Safe
+"Reminder: parent-teacher conference is scheduled for Monday.",Safe
+"Thanks again for helping me move last weekend.",Safe

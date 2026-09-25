@@ -1,0 +1,15 @@
+indicator,type,category,severity,notes
+verify-account-secure.com,domain,Phishing,strong,Known phishing domain impersonating bank verification pages
+paypal-security-alert.net,domain,Phishing,strong,Fake PayPal security alert domain
+irs-refund-claim.com,domain,Fraud,strong,Fake tax refund scam domain
+amaz0n-support.com,domain,Phishing,strong,Typosquat of Amazon support
+microsoft-billing-help.com,domain,Phishing,medium,Fake Microsoft billing support page
+bit.ly,domain,Suspicious,weak,Link shortener frequently abused in phishing campaigns
+tinyurl.com,domain,Suspicious,weak,Link shortener frequently abused in phishing campaigns
+grabify.link,domain,Suspicious,medium,IP logging / tracking link service
+1-800-555-0199,phone,Fraud,medium,Reported robocall number - fake IRS agent
+1-800-555-0142,phone,Fraud,strong,Reported tech support scam number
+support@paypa1-security.com,email,Phishing,strong,Spoofed PayPal support address
+billing@amaz0n-verify.com,email,Phishing,strong,Spoofed Amazon billing address
+security@banik-alerts.com,email,Phishing,medium,Spoofed bank security alert address
+noreply@irs-govrefund.com,email,Fraud,strong,Fake IRS refund notice address
