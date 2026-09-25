@@ -3,6 +3,7 @@
 export const DEFAULTS = {
   api: "http://127.0.0.1:8000", // the Argus scanning engine
   app: "http://localhost:3000", // the Argus web app, for "See the full evidence"
+  token: "", // only for a hosted engine: its ARGUS_API_TOKEN
   protect: true, // warn before dangerous pages open
 };
 
@@ -11,12 +12,12 @@ export async function getSettings() {
 }
 
 async function post(path, body, timeoutMs) {
-  const { api } = await getSettings();
+  const { api, token } = await getSettings();
   let res;
   try {
     res = await fetch(api.replace(/\/$/, "") + path, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });

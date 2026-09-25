@@ -1,8 +1,10 @@
+import hmac
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from argus_api import config
@@ -27,6 +29,18 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="ARGUS API", version="1.0", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def require_token(request: Request, call_next):
+    """Once deployed (ARGUS_API_TOKEN set), only callers with the token can scan; health checks stay open."""
+    token = config.key("ARGUS_API_TOKEN")
+    if token and request.url.path != "/health" and request.method != "OPTIONS":
+        if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {token}"):
+            return JSONResponse({"detail": "Missing or wrong API token"}, status_code=401)
+    return await call_next(request)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],

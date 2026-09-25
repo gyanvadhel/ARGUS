@@ -128,3 +128,16 @@ def test_scan_accepts_which_mailbox_an_email_came_from():
     raw = "From: a@b.example\nTo: c@d.example\nSubject: hi\n\nhello"
     assert client.post("/scan", json={"input": raw, "kind": "email", "mailbox": "spam"}).status_code == 200
     assert client.post("/scan", json={"input": raw, "kind": "email", "mailbox": "junk"}).status_code == 422
+
+
+def test_a_deployed_engine_only_answers_the_website(monkeypatch):
+    monkeypatch.setenv("ARGUS_API_TOKEN", "s3cret-token")
+    body = {"input": "are we still on for lunch?"}
+    assert client.post("/scan", json=body).status_code == 401
+    assert client.post("/scan", json=body, headers={"authorization": "Bearer wrong"}).status_code == 401
+    assert client.post("/scan", json=body, headers={"authorization": "Bearer s3cret-token"}).status_code == 200
+    assert client.get("/health").status_code == 200  # hosting health checks stay open
+
+
+def test_without_a_token_the_local_engine_stays_open():
+    assert client.post("/scan", json={"input": "are we still on for lunch?"}).status_code == 200

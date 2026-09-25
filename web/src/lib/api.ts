@@ -2,14 +2,22 @@ import "server-only";
 import type { Community, FeedStatus, ScanKind, Verdict } from "./types";
 
 const BASE = process.env.ARGUS_API_URL ?? "http://127.0.0.1:8000";
+/** A hosted engine on a free plan sleeps when idle, so a slow first answer means it's waking up. */
+export const engineHosted = !/localhost|127\.0\.0\.1/.test(BASE);
+const WAKING = "The scanning engine is waking up (free hosting sleeps when nobody has used it for a while). Try again in a few seconds.";
 
 export class ApiOfflineError extends Error {}
 
 async function call<T>(path: string, init?: RequestInit, timeoutMs = 25000): Promise<T> {
+  // A deployed engine only answers callers that carry its token.
+  const headers = new Headers(init?.headers);
+  const token = process.env.ARGUS_API_TOKEN;
+  if (token) headers.set("authorization", `Bearer ${token}`);
   let res: Response;
   try {
-    res = await fetch(BASE + path, { ...init, cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
+    res = await fetch(BASE + path, { ...init, headers, cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
   } catch (e) {
+    if (engineHosted) throw new ApiOfflineError(WAKING);
     if (e instanceof DOMException && e.name === "TimeoutError") {
       throw new Error("The scan took too long to finish. Please try again.");
     }

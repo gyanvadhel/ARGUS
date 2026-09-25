@@ -10,7 +10,7 @@ import type { Community, Verdict } from "@/lib/types";
 
 export type ScanResult = { ok: true; id: string; verdict: Verdict; alerted: number } | { ok: false; error: string };
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // hosting limits a request to 4.5 MB
 const PHONEISH = /^\+?[\d\s\-().]{7,20}$/;
 
 async function phoneCommunity(supabase: Awaited<ReturnType<typeof createClient>>, input: string): Promise<Community | undefined> {
@@ -35,7 +35,7 @@ export async function runScan(formData: FormData): Promise<ScanResult> {
     let verdict: Verdict;
     let preview: string;
     if (file instanceof File && file.size > 0) {
-      if (file.size > MAX_UPLOAD_BYTES) return { ok: false, error: "Files up to 8 MB can be scanned in the web app." };
+      if (file.size > MAX_UPLOAD_BYTES) return { ok: false, error: "Files up to 4 MB can be scanned in the web app." };
       verdict = await api.scanFile(file);
       preview = file.name;
     } else if (input) {

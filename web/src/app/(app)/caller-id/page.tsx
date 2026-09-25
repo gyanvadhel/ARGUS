@@ -19,3 +19,6 @@ export default async function CallerIdPage() {
     </>
   );
 }
+
+// Scans visit sites and ask several sources, so give them time on serverless hosting.
+export const maxDuration = 60;

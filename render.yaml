@@ -1,0 +1,24 @@
+# Render Blueprint: the Argus scanning engine as a free web service.
+# Render → New → Blueprint → pick this repo. The website (on Vercel) talks to it with ARGUS_API_TOKEN.
+services:
+  - type: web
+    name: argus-api
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: api
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn argus_api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ARGUS_API_TOKEN # generated for you: copy it into the Vercel project too
+        generateValue: true
+      - key: VIRUSTOTAL_API_KEY # optional: Render asks for it when you create the service
+        sync: false
+      - key: ARGUS_DEFAULT_REGION
+        value: IN
+      - key: OPENBLAS_NUM_THREADS # keep numpy's math buffers small on the 512 MB free plan
+        value: "1"
+      - key: OMP_NUM_THREADS
+        value: "1"

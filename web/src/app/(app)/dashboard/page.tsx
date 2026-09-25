@@ -7,7 +7,7 @@ import { RecentScans } from "@/components/app/recent-scans";
 import { StatCard } from "@/components/app/stat-card";
 import { ThreatsChart } from "@/components/app/threats-chart";
 import { buttonVariants } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { api, engineHosted } from "@/lib/api";
 import { summarize } from "@/lib/stats";
 import { createClient } from "@/lib/supabase/server";
 import type { ScanRow } from "@/lib/types";
@@ -83,7 +83,7 @@ export default async function DashboardPage() {
         </section>
         <section className="glass rounded-3xl p-6">
           <h2 className="mb-5 font-serif text-2xl">Protection status</h2>
-          <ProtectionStatus sources={health?.sources ?? null} feeds={health?.feeds ?? null} />
+          <ProtectionStatus sources={health?.sources ?? null} feeds={health?.feeds ?? null} hosted={engineHosted} />
         </section>
       </div>
     </>

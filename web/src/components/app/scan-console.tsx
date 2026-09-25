@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { ReportNumber } from "./report-number";
 import { VerdictView } from "./verdict-view";
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // hosting limits a request to 4.5 MB
 
 const SAMPLES: { label: string; input?: string; eicar?: boolean }[] = [
   { label: "Phishing link", input: "http://paypal-security-alert.net/verify-account" },
@@ -85,7 +85,7 @@ export function ScanConsole({ initialInput }: { initialInput?: string }) {
   function pickFile(f: File | null | undefined) {
     if (!f) return;
     if (f.size > MAX_UPLOAD_BYTES) {
-      toast.error("Files up to 8 MB can be scanned in the web app.");
+      toast.error("Files up to 4 MB can be scanned in the web app.");
       return;
     }
     setFile(f);

@@ -37,6 +37,29 @@ clean for a month. Otherwise the best it will say is **No red flags**.
 4. **Start:** `./dev.ps1`, then open http://localhost:3000. On first start the engine downloads about 20 MB of threat
    feeds in the background.
 
+## Deploy for free
+
+The website runs on Vercel and the scanning engine on Render, both on free plans. Supabase stays where it is.
+
+1. **Engine on Render:** sign in at render.com with GitHub, then **New → Blueprint** and pick this repo (it reads
+   `render.yaml`). Enter your VirusTotal key when asked (optional). Once it's live, copy its address
+   (`https://argus-api-….onrender.com`) and, under **Environment**, the generated `ARGUS_API_TOKEN`.
+2. **Website on Vercel:** sign in at vercel.com with GitHub, then **Add New → Project**, import this repo, set
+   **Root Directory** to `web`, and add these environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: same as `web/.env.local`
+   - `ARGUS_API_URL`: the Render address; `ARGUS_API_TOKEN`: the token from Render
+   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GMAIL_TOKEN_KEY` and `TELEGRAM_BOT_TOKEN`: same as
+     `web/.env.local` (the same `GMAIL_TOKEN_KEY` keeps existing Gmail connections working)
+   - `APP_URL`: your Vercel address, like `https://argus.vercel.app`
+3. **Point sign-ins at the new address:**
+   - **Supabase:** in Authentication → URL Configuration, set the Site URL to your Vercel address and add it to
+     the redirect URLs (keep `http://localhost:3000`).
+   - **Google Cloud:** add `https://<your Vercel address>/api/gmail/callback` to your OAuth client's
+     authorized redirect URIs.
+4. **Free Render services sleep** after 15 minutes without visits, and the first scan after that takes about a minute
+   while the engine wakes up. Open the site a couple of minutes before a demo, or have a free uptime monitor (such
+   as UptimeRobot) visit `/health` every 10 minutes.
+
 ## Connect Gmail (optional)
 
 The Inbox page reads your latest emails (read-only) and checks each one. It needs a Google sign-in app that belongs

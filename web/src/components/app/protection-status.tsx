@@ -38,12 +38,19 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export function ProtectionStatus({
   sources,
   feeds,
+  hosted = false,
 }: {
   sources: Record<string, boolean> | null;
   feeds?: Record<string, FeedStatus> | null;
+  /** A hosted engine on a free plan sleeps when idle; this page load has just woken it. */
+  hosted?: boolean;
 }) {
   if (!sources) {
-    return (
+    return hosted ? (
+      <div className="rounded-2xl border border-border/70 p-4 text-sm text-muted-foreground">
+        The scanning engine is waking up: free hosting sleeps when nobody has used it for a while. Refresh in a few seconds.
+      </div>
+    ) : (
       <div className="rounded-2xl border border-risk-high/30 bg-risk-high/10 p-4 text-sm text-risk-high">
         The scanning engine is offline. Run <code className="font-mono">dev.ps1</code> to start it.
       </div>
