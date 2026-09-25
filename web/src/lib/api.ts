@@ -26,11 +26,12 @@ async function call<T>(path: string, init?: RequestInit, timeoutMs = 25000): Pro
 }
 
 export const api = {
-  scan: (input: string, community?: Community, kind?: ScanKind) =>
+  /** `mailbox` marks email Argus fetched from Gmail itself, so its links are only opened when that's safe. */
+  scan: (input: string, community?: Community, kind?: ScanKind, mailbox?: "inbox" | "spam") =>
     call<Verdict>("/scan", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ input, community, kind }),
+      body: JSON.stringify({ input, community, kind, mailbox }),
     }),
   scanFile: (file: File) => {
     const form = new FormData();

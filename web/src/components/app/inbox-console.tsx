@@ -6,31 +6,40 @@ import { RotateCw } from "lucide-react";
 import { disconnectGmail, listInbox, scanMessage, type InboxItem } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
 import { timeAgo } from "@/lib/format";
+import type { Folder } from "@/lib/gmail";
 import { senderName } from "@/lib/mail-format";
 import { runPool } from "@/lib/pool";
 import { cn } from "@/lib/utils";
 import { LevelPill } from "./level-pill";
 
-function tally(items: InboxItem[]): string {
+const FOLDERS: { id: Folder; label: string }[] = [
+  { id: "inbox", label: "Inbox" },
+  { id: "spam", label: "Spam" },
+];
+
+function tally(items: InboxItem[], folder: Folder): string {
   const checked = items.filter((i) => i.verdict);
-  if (!checked.length) return `${items.length} latest emails`;
+  const lead = folder === "spam" ? `Gmail caught ${items.length} recently` : `${items.length} latest emails`;
+  if (!checked.length) return lead;
   const risky = checked.filter((i) => i.verdict!.score >= 60).length;
   const caution = checked.filter((i) => i.verdict!.score >= 30 && i.verdict!.score < 60).length;
-  const parts = [`${risky} risky`, `${caution} to be careful with`, `${checked.length - risky - caution} with no red flags`];
-  return `${items.length} latest emails: ${parts.join(", ")}`;
+  const clear = checked.length - risky - caution;
+  const counts = `${risky} risky, ${caution} to be careful with, ${clear} with no red flags`;
+  return folder === "spam" ? `${lead}. Argus rates ${counts}` : `${lead}: ${counts}`;
 }
 
 export function InboxConsole({ email, justConnected }: { email: string; justConnected: boolean }) {
+  const [folder, setFolder] = useState<Folder>("inbox");
   const [items, setItems] = useState<InboxItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reconnect, setReconnect] = useState(false);
   const [checking, setChecking] = useState<Set<string>>(new Set());
   const [loading, startLoading] = useTransition();
 
-  // Opening the page checks only new emails; "Check again" re-checks everything shown with the latest intelligence.
-  const load = useCallback((recheck = false) => {
+  // Opening a folder checks only new emails; "Check again" re-checks everything shown with the latest intelligence.
+  const load = useCallback((from: Folder, recheck = false) => {
     startLoading(async () => {
-      const res = await listInbox();
+      const res = await listInbox(from);
       if (!res.ok) {
         setError(res.error);
         setReconnect(Boolean(res.reconnect));
@@ -40,9 +49,9 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
       setItems(recheck ? res.items.map((i) => ({ ...i, verdict: null })) : res.items);
       const pending = res.items.filter((i) => recheck || !i.verdict).map((i) => i.id);
       setChecking(new Set(pending));
-      // Three at a time: each email's links get a live check, so the engine isn't flooded.
+      // Three at a time, so the engine isn't flooded.
       await runPool(pending, 3, async (id) => {
-        const result = await scanMessage(id);
+        const result = await scanMessage(id, from);
         setChecking((s) => {
           const next = new Set(s);
           next.delete(id);
@@ -58,9 +67,16 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => load(), 0); // read the inbox as soon as the page opens
+    const t = setTimeout(() => load("inbox"), 0); // read the inbox as soon as the page opens
     return () => clearTimeout(t);
   }, [load]);
+
+  function open(next: Folder) {
+    if (next === folder) return;
+    setFolder(next);
+    setItems(null);
+    load(next);
+  }
 
   if (reconnect) {
     return (
@@ -80,10 +96,12 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
           <p className="text-sm">
             {justConnected ? "Connected. " : ""}Watching <span className="font-medium">{email}</span>
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">Read-only access. {items ? tally(items) : "Reading your latest emails…"}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Read-only access. {items ? tally(items, folder) : "Reading your latest emails…"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => load(true)} disabled={loading}>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => load(folder, true)} disabled={loading}>
             <RotateCw className={cn("size-3.5", loading && "animate-spin")} /> Check again
           </Button>
           <form action={disconnectGmail}>
@@ -94,9 +112,34 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
         </div>
       </div>
 
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" aria-label="Gmail folder" className="flex gap-2">
+          {FOLDERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={folder === f.id}
+              onClick={() => open(f.id)}
+              className={cn(
+                "rounded-full border border-border/70 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground",
+                folder === f.id && "border-primary/60 bg-primary/10 text-foreground",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {folder === "spam"
+            ? "What Gmail filtered out, with Argus's reasons. Links in spam are never opened."
+            : "What reached you. Links are only opened when that can't use up a one-time link."}
+        </p>
+      </div>
+
       {error && <p className="mt-4 text-sm text-risk-high">{error}</p>}
 
-      <ul className="mt-5 divide-y divide-border/60 border-t border-border/60" aria-busy={loading}>
+      <ul className="mt-4 divide-y divide-border/60 border-t border-border/60" aria-busy={loading}>
         {items === null &&
           Array.from({ length: 5 }, (_, i) => (
             <li key={i} className="flex animate-pulse items-center gap-4 py-4">
@@ -104,7 +147,11 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
               <span className="h-3 flex-1 rounded-full bg-white/5" />
             </li>
           ))}
-        {items?.length === 0 && <li className="py-10 text-center text-muted-foreground">Your inbox is empty.</li>}
+        {items?.length === 0 && (
+          <li className="py-10 text-center text-muted-foreground">
+            {folder === "spam" ? "Gmail's spam folder is empty. It deletes spam after 30 days." : "Your inbox is empty."}
+          </li>
+        )}
         {items?.map((item) => {
           const row = (
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3.5">

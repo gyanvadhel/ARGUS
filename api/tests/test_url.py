@@ -139,8 +139,8 @@ def live_feeds(tmp_path, monkeypatch):
 
 @_pytest.fixture
 def web(monkeypatch):
-    """Fake internet: DNS answers, certificates and pages keyed by host."""
-    state = {"dns": {}, "pages": {}}
+    """Fake internet: DNS answers, certificates and pages keyed by host. Records every page visited."""
+    state = {"dns": {}, "pages": {}, "fetched": []}
 
     async def resolve(host):
         return state["dns"].get(host, ["93.184.216.34"])
@@ -149,6 +149,7 @@ def web(monkeypatch):
         return None
 
     async def fetch_page(client, url):
+        state["fetched"].append(url)
         host = u.host_of(url)
         if state["dns"].get(host) == []:
             return _netcheck.PageFetch(final_url=url, error="nxdomain")

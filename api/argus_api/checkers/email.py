@@ -10,7 +10,7 @@ from email.utils import parseaddr
 
 from argus_api.aggregate import combine, verdict_as_signal
 from argus_api.checkers.text import extract_urls, ml_signal, phone_signals, rules_signal, unique_hosts
-from argus_api.checkers.url import BRAND_DOMAINS, brand_name, check_url, host_of, is_popular
+from argus_api.checkers.url import BRAND_DOMAINS, brand_name, check_url, host_of, is_popular, visit_decision
 from argus_api.intel.brands import is_official
 from argus_api.models import Signal, Verdict
 
@@ -122,12 +122,14 @@ def extract_body(msg: EmailMessage) -> tuple[str, list[str]]:
     return body.strip(), _HREF.findall(html_text)
 
 
-async def check_email(raw: str) -> Verdict:
+async def check_email(raw: str, mailbox: str | None = None) -> Verdict:
+    """`mailbox` ("inbox" or "spam") marks mail Argus fetched on its own: its links are only opened when safe."""
     msg = Parser(policy=policy.default).parsestr(raw.strip())
     body, links = extract_body(msg)
     text = body or raw
     urls = unique_hosts(links + extract_urls(text))[:3]
-    phones, verdicts = await asyncio.gather(phone_signals(text), asyncio.gather(*(check_url(u) for u in urls)))
+    checks = (check_url(u, visit_decision(u, mailbox)) for u in urls)
+    phones, verdicts = await asyncio.gather(phone_signals(text), asyncio.gather(*checks))
     signals = [header_signal(msg), ml_signal(text), rules_signal(text), *phones]
     signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
     return combine("email", str(msg.get("Subject") or "Pasted email"), signals)

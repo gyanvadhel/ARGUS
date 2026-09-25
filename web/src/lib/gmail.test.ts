@@ -119,4 +119,10 @@ describe("Google calls", () => {
     expect(String(fetch.mock.calls[0][0])).toContain("labelIds=INBOX");
     expect(fetch.mock.calls[0][1].headers.authorization).toBe("Bearer at");
   });
+  it("reads Gmail's spam folder when asked", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json({}));
+    vi.stubGlobal("fetch", fetch);
+    expect(await listRecent("at", 5, "spam")).toEqual([]);
+    expect(String(fetch.mock.calls[0][0])).toContain("labelIds=SPAM");
+  });
 });

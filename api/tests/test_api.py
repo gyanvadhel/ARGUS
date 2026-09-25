@@ -122,3 +122,9 @@ def test_scan_text():
     r = client.post("/scan", json={"input": "Hey are we still on for lunch tomorrow at noon?"})
     assert r.status_code == 200
     assert r.json()["kind"] == "text"
+
+
+def test_scan_accepts_which_mailbox_an_email_came_from():
+    raw = "From: a@b.example\nTo: c@d.example\nSubject: hi\n\nhello"
+    assert client.post("/scan", json={"input": raw, "kind": "email", "mailbox": "spam"}).status_code == 200
+    assert client.post("/scan", json={"input": raw, "kind": "email", "mailbox": "junk"}).status_code == 422

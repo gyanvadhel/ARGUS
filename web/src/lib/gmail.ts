@@ -93,8 +93,11 @@ export async function profileEmail(accessToken: string): Promise<string> {
   return (await gmail<{ emailAddress: string }>(accessToken, "/profile")).emailAddress;
 }
 
-export async function listRecent(accessToken: string, max = 10): Promise<MailMeta[]> {
-  const list = await gmail<{ messages?: { id: string }[] }>(accessToken, `/messages?maxResults=${max}&labelIds=INBOX`);
+export type Folder = "inbox" | "spam";
+
+export async function listRecent(accessToken: string, max = 10, folder: Folder = "inbox"): Promise<MailMeta[]> {
+  const label = folder === "spam" ? "SPAM" : "INBOX";
+  const list = await gmail<{ messages?: { id: string }[] }>(accessToken, `/messages?maxResults=${max}&labelIds=${label}`);
   const heads = "&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date";
   const messages = await Promise.all(
     (list.messages ?? []).map((m) => gmail<GmailMessage>(accessToken, `/messages/${m.id}?format=metadata${heads}`)),

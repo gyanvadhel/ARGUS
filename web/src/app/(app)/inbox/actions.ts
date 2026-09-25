@@ -13,6 +13,7 @@ import {
   senderName,
   toMeta,
   toRawEmail,
+  type Folder,
   type MailMeta,
 } from "@/lib/gmail";
 import { createClient } from "@/lib/supabase/server";
@@ -58,13 +59,13 @@ async function failure(supabase: Supabase, userId: string, e: unknown): Promise<
 
 type ScanRow = { id: string; level: RiskLevel; score: number; threat_type: string; verified: boolean | null };
 
-/** The latest inbox messages, with the verdict for any Argus has already checked. */
-export async function listInbox(): Promise<{ ok: true; items: InboxItem[] } | Failure> {
+/** The latest messages in the inbox (or what Gmail filed as spam), with the verdict for any Argus already checked. */
+export async function listInbox(folder: Folder = "inbox"): Promise<{ ok: true; items: InboxItem[] } | Failure> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Your session expired. Please sign in again." };
   try {
-    const messages = await listRecent(await accessToken(supabase, user.id), LATEST);
+    const messages = await listRecent(await accessToken(supabase, user.id), LATEST, folder === "spam" ? "spam" : "inbox");
     const ids = messages.map((m) => m.id);
     const { data } = ids.length
       ? await supabase
@@ -90,14 +91,15 @@ export async function listInbox(): Promise<{ ok: true; items: InboxItem[] } | Fa
   }
 }
 
-/** Check one email: fetch it from Gmail, run it through Argus, and keep the verdict in history. */
-export async function scanMessage(messageId: string): Promise<{ ok: true; verdict: MailVerdict } | Failure> {
+/** Check one email: fetch it from Gmail, run it through Argus, and keep the verdict in history.
+ * Argus fetched it on its own, so its links are only opened when that's safe (never for spam). */
+export async function scanMessage(messageId: string, folder: Folder = "inbox"): Promise<{ ok: true; verdict: MailVerdict } | Failure> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Your session expired. Please sign in again." };
   try {
     const message = await fullMessage(await accessToken(supabase, user.id), messageId);
-    const verdict = await api.scan(toRawEmail(message), undefined, "email");
+    const verdict = await api.scan(toRawEmail(message), undefined, "email", folder === "spam" ? "spam" : "inbox");
     const meta = toMeta(message);
     const { data, error } = await supabase
       .from("scans")

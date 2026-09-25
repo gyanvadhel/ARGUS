@@ -396,13 +396,14 @@ class Live:
     cert: netcheck.CertInfo | None = None
 
 
-async def live_check(client: httpx.AsyncClient, url: str, host: str) -> Live:
+async def live_check(client: httpx.AsyncClient, url: str, host: str, visit: bool = True) -> Live:
+    """DNS and the certificate never touch the link itself; the page is only fetched when visiting is allowed."""
     ips = await netcheck.resolve(host)
     if ips == [] or (ips and not all(netcheck.is_public(ip) for ip in ips)):
         return Live(ips=ips)
     https = urlparse(url).scheme == "https"
     page, cert = await asyncio.gather(
-        netcheck.fetch_page(client, url),
+        netcheck.fetch_page(client, url) if visit else asyncio.sleep(0),
         netcheck.certificate(host) if https else asyncio.sleep(0),
         return_exceptions=True,
     )
@@ -610,6 +611,29 @@ def address_signals(url: str, host: str, after_redirect: bool = False) -> list[S
     return signals + feed_signals(url, host)
 
 
+# When Argus checks mail on its own, opening a link can use it up (unsubscribe, "verify your email", password
+# resets, magic sign-in links) or tell a spammer the address is live. So those links are judged without a visit.
+ONE_TIME = re.compile(r"(unsub|opt-?out|verif|confirm|activat|reset|passw|magic|one-?time|otp|token=|code=|sign-?in|"
+                      r"log-?in|logon|auth|invite|accept|approve|cancel|revoke|session|key=)", re.I)
+
+
+def visit_decision(url: str, mailbox: str | None) -> str | None:
+    """Why a link found in a mailbox won't be opened, or None when it will be. Links you check yourself always are."""
+    if mailbox is None:
+        return None
+    if mailbox == "spam":
+        return "Not opened: links in spam are never visited, so the sender can't learn your address is live"
+    parsed = urlparse(normalize_url(url))
+    if ONE_TIME.search(f"{parsed.path}?{parsed.query}"):
+        return "Not opened: it looks like a one-time link (unsubscribe, sign-in, verify or reset) that opening could use up"
+    host = host_of(url)
+    if is_shortener(host):
+        return "Not opened: short links are only followed when you check a link yourself"
+    if is_popular(host):
+        return "Not opened: a well-known site, so its reputation is enough"
+    return None
+
+
 def quick_check_url(raw: str) -> Verdict:
     """Instant verdict from the address, the live feeds and site reputation, without visiting the site.
     Used by the browser extension to warn while a page is still starting to load."""
@@ -617,12 +641,13 @@ def quick_check_url(raw: str) -> Verdict:
     return combine("url", url, address_signals(url, host_of(url)))
 
 
-async def check_url(raw: str) -> Verdict:
+async def check_url(raw: str, skip_visit: str | None = None) -> Verdict:
+    """The full check. `skip_visit` (a reason) judges the link without opening it; see visit_decision."""
     url = normalize_url(raw)
     host = host_of(url)
     async with make_client() as client:
         live, remote = await asyncio.gather(
-            asyncio.wait_for(live_check(client, url, host), LIVE_CHECK_SECONDS),
+            asyncio.wait_for(live_check(client, url, host, visit=skip_visit is None), LIVE_CHECK_SECONDS),
             asyncio.gather(
                 guarded("URLhaus", urlhaus(client, url)),
                 guarded("Google Safe Browsing", safe_browsing(client, url)),
@@ -645,6 +670,8 @@ async def check_url(raw: str) -> Verdict:
         signals = [s.model_copy(update={"trust": 0.0}) if s.trust else s for s in signals]
         signals.append(redirect)
         signals += address_signals(live.page.final_url, landed, after_redirect=True)
+    if skip_visit:
+        signals.append(Signal(source="Page visit", status="unknown", score=0, weight=0, summary=skip_visit))
     if isinstance(remote, list):
         signals += remote
     return combine("url", url, signals)

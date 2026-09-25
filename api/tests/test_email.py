@@ -103,3 +103,45 @@ def test_a_different_bounce_domain_still_counts_when_dmarc_did_not_pass():
     raw = CLEAN.replace("dmarc=pass", "dmarc=none").replace("To: you@example.com", "Return-Path: <x@bulk-mailer.biz>\nTo: you@example.com")
     s = header_signal(parse(raw))
     assert any("Bounce address" in r for r in s.evidence["reasons"])
+
+
+# --- visiting links safely: a visit can use up a one-time link or tell a spammer your address is live -----
+from argus_api.checkers import url as _url  # noqa: E402
+from tests.test_url import live_feeds, web  # noqa: E402,F401 - shared fixtures: fake feeds and a fake internet
+
+
+def _mail_with(link):
+    return (
+        "From: Shop <news@shop.example>\nTo: you@example.com\nSubject: hello\nMIME-Version: 1.0\n"
+        f'Content-Type: text/html; charset=utf-8\n\n<p>Hi <a href="{link}">here</a></p>'
+    )
+
+
+def test_one_time_links_and_well_known_sites_are_not_opened_automatically(live_feeds):
+    assert _url.visit_decision("http://tiny-shop.example/sale", "inbox") is None  # unknown site: worth a look
+    for link in ("http://tiny-shop.example/unsubscribe?u=42", "https://tiny-shop.example/verify-email?token=abc",
+                 "https://tiny-shop.example/reset-password?code=9", "https://tiny-shop.example/magic-link/xyz"):
+        assert "one-time" in _url.visit_decision(link, "inbox"), link
+    assert "well-known" in _url.visit_decision("https://www.google.com/search?q=hi", "inbox")
+    assert "spam" in _url.visit_decision("http://tiny-shop.example/sale", "spam")
+    assert _url.visit_decision("https://tiny-shop.example/verify-email?token=abc", None) is None  # you pasted it: look
+
+
+async def test_inbox_scans_open_unknown_links_but_never_one_time_ones(live_feeds, web):
+    await check_email(_mail_with("http://tiny-shop.example/sale"), mailbox="inbox")
+    await check_email(_mail_with("http://tiny-shop.example/unsubscribe?u=42"), mailbox="inbox")
+    assert web["fetched"] == ["http://tiny-shop.example/sale"]
+
+
+async def test_links_in_spam_are_never_opened_but_still_judged(live_feeds, web):
+    v = await check_email(_mail_with("http://secure-paypal-verify.com/login"), mailbox="spam")
+    assert web["fetched"] == []
+    link = next(s for s in v.signals if s.source.startswith("Link:"))
+    nested = {s["source"]: s for s in link.evidence["signals"]}
+    assert nested["Phishing.Database"]["status"] == "malicious"  # the feeds still catch it
+    assert "spam" in nested["Page visit"]["summary"]
+
+
+async def test_emails_you_paste_yourself_are_checked_in_full(live_feeds, web):
+    await check_email(_mail_with("https://tiny-shop.example/verify-email?token=abc"))
+    assert web["fetched"] == ["https://tiny-shop.example/verify-email?token=abc"]

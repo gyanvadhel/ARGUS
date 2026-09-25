@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,6 +40,8 @@ class ScanRequest(BaseModel):
     kind: Kind | None = None
     community_reports: int = Field(default=0, ge=0, le=100_000)
     community: Community | None = None
+    # Set when the web app fetched this email from a mailbox itself: its links are then only opened when safe.
+    mailbox: Literal["inbox", "spam"] | None = None
 
     @field_validator("input")
     @classmethod
@@ -54,11 +57,11 @@ def health() -> dict:
     return {"status": "ok", "sources": config.source_status(), "feeds": feeds.store.status()}
 
 
-async def dispatch(kind: Kind, text: str, community: Community) -> Verdict:
+async def dispatch(kind: Kind, text: str, community: Community, mailbox: str | None = None) -> Verdict:
     if kind == "url":
         return await check_url(text)
     if kind == "email":
-        return await check_email(text)
+        return await check_email(text, mailbox)
     if kind == "phone":
         return await scan_phone(text, community)
     return await check_text(text)
@@ -67,7 +70,7 @@ async def dispatch(kind: Kind, text: str, community: Community) -> Verdict:
 @app.post("/scan", response_model=Verdict)
 async def scan(req: ScanRequest) -> Verdict:
     kind = req.kind or detect_kind(req.input)
-    return await dispatch(kind, req.input, req.community or Community(reports=req.community_reports))
+    return await dispatch(kind, req.input, req.community or Community(reports=req.community_reports), req.mailbox)
 
 
 @app.post("/scan/quick", response_model=Verdict)
