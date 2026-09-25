@@ -42,6 +42,14 @@ BRAND_DOMAINS: dict[str, tuple[str, ...]] = {
     "sbi": ("onlinesbi.sbi", "sbi.co.in"),
     "paytm": ("paytm.com",),
 }
+BRAND_NAMES = {"paypal": "PayPal", "wellsfargo": "Wells Fargo", "hdfc": "HDFC", "icici": "ICICI", "sbi": "SBI",
+               "whatsapp": "WhatsApp"}
+
+
+def brand_name(brand: str) -> str:
+    return BRAND_NAMES.get(brand, brand.title())
+
+
 SAFE_BROWSING_TYPES = {"MALWARE": "Malware", "SOCIAL_ENGINEERING": "Phishing",
                        "UNWANTED_SOFTWARE": "Unwanted software", "POTENTIALLY_HARMFUL_APPLICATION": "Harmful app"}
 LOCAL_SEVERITY = {"strong": 90, "medium": 60, "weak": 30}
@@ -103,7 +111,7 @@ def heuristics(url: str) -> Signal:
         flag(30, "Uses look-alike international characters (punycode)")
     for brand in _brand_hits(host):
         if not _is_official(host, BRAND_DOMAINS[brand]):
-            flag(40, f"Mentions {brand.title()} but isn't an official {brand.title()} domain")
+            flag(40, f"Mentions {brand_name(brand)} but isn't an official {brand_name(brand)} domain")
             threat = "Phishing"
     if threat is None:
         for table in _LOOKALIKES:
@@ -112,7 +120,7 @@ def heuristics(url: str) -> Signal:
                 continue
             brand = next((b for b in _brand_hits(swapped) if not _is_official(swapped, BRAND_DOMAINS[b])), None)
             if brand:
-                flag(45, f"Imitates {brand.title()} by swapping look-alike characters")
+                flag(45, f"Imitates {brand_name(brand)} by swapping look-alike characters")
                 threat = "Phishing"
                 break
     if host in SHORTENERS or registrable_domain(host) in SHORTENERS:

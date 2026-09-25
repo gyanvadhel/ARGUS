@@ -15,7 +15,7 @@ def test_normalize_url_adds_https():
 def test_heuristics_flags_brand_impersonation():
     s = u.heuristics("http://paypal-security-alert.net/verify")
     assert s.status == "suspicious" and s.score >= 40
-    assert any("Paypal" in r for r in s.evidence["reasons"])
+    assert any("PayPal" in r for r in s.evidence["reasons"])
 
 
 def test_heuristics_flags_lookalike_characters():
