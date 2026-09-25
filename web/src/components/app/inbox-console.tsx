@@ -27,7 +27,8 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
   const [checking, setChecking] = useState<Set<string>>(new Set());
   const [loading, startLoading] = useTransition();
 
-  const load = useCallback(() => {
+  // Opening the page checks only new emails; "Check again" re-checks everything shown with the latest intelligence.
+  const load = useCallback((recheck = false) => {
     startLoading(async () => {
       const res = await listInbox();
       if (!res.ok) {
@@ -36,8 +37,8 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
         return;
       }
       setError(null);
-      setItems(res.items);
-      const pending = res.items.filter((i) => !i.verdict).map((i) => i.id);
+      setItems(recheck ? res.items.map((i) => ({ ...i, verdict: null })) : res.items);
+      const pending = res.items.filter((i) => recheck || !i.verdict).map((i) => i.id);
       setChecking(new Set(pending));
       // Three at a time: each email's links get a live check, so the engine isn't flooded.
       await runPool(pending, 3, async (id) => {
@@ -57,7 +58,7 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(load, 0); // read the inbox as soon as the page opens
+    const t = setTimeout(() => load(), 0); // read the inbox as soon as the page opens
     return () => clearTimeout(t);
   }, [load]);
 
@@ -82,7 +83,7 @@ export function InboxConsole({ email, justConnected }: { email: string; justConn
           <p className="mt-0.5 text-xs text-muted-foreground">Read-only access. {items ? tally(items) : "Reading your latest emails…"}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-full" onClick={load} disabled={loading}>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => load(true)} disabled={loading}>
             <RotateCw className={cn("size-3.5", loading && "animate-spin")} /> Check again
           </Button>
           <form action={disconnectGmail}>

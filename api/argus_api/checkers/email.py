@@ -81,7 +81,8 @@ def header_signal(msg: EmailMessage) -> Signal:
                 break
 
     bounce_domain = _domain(parseaddr(str(msg.get("Return-Path", "")))[1])
-    if bounce_domain and from_domain and bounce_domain != from_domain:
+    # Once DMARC passes, the sender is proven: bouncing through a subdomain or a mail service is normal bulk mail.
+    if bounce_domain and from_domain and bounce_domain != from_domain and auth["dmarc"] != "pass":
         points += 10
         reasons.append(f"Bounce address uses a different domain ({bounce_domain})")
 

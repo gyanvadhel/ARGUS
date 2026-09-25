@@ -89,3 +89,17 @@ async def test_authentication_alone_does_not_vouch_for_a_stranger():
 async def test_free_mail_accounts_are_never_vouched_for():
     v = await check_email(STRANGER_ON_GMAIL)  # anyone can pass authentication as gmail.com
     assert v.verified is False
+
+
+async def test_bulk_mail_bouncing_through_a_mail_service_can_still_be_verified():
+    # DMARC already proved who sent it; bouncing via a subdomain or a mail service like Amazon SES is normal.
+    for bounce in ("bounces+123@em.paypal.com", "0100018f-abc@amazonses.com"):
+        raw = RECEIPT.replace("To: you@example.com", f"Return-Path: <{bounce}>\nTo: you@example.com")
+        v = await check_email(raw)
+        assert v.verified is True, bounce
+
+
+def test_a_different_bounce_domain_still_counts_when_dmarc_did_not_pass():
+    raw = CLEAN.replace("dmarc=pass", "dmarc=none").replace("To: you@example.com", "Return-Path: <x@bulk-mailer.biz>\nTo: you@example.com")
+    s = header_signal(parse(raw))
+    assert any("Bounce address" in r for r in s.evidence["reasons"])
