@@ -44,7 +44,7 @@ const STAGES = [
   "Weighing the evidence…",
 ];
 
-export function ScanConsole({ initialInput }: { initialInput?: string }) {
+export function ScanConsole({ initialInput, autoRun = false }: { initialInput?: string; autoRun?: boolean }) {
   const [input, setInput] = useState(initialInput ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -76,10 +76,11 @@ export function ScanConsole({ initialInput }: { initialInput?: string }) {
 
   // A link sent from the browser extension ("See the full evidence") starts scanning straight away.
   useEffect(() => {
-    if (!initialInput || detectKind(initialInput) !== "url") return;
+    // Links from the extension start at once; anything else only when asked to (the dashboard's first-visit examples).
+    if (!initialInput || (!autoRun && detectKind(initialInput) !== "url")) return;
     const t = setTimeout(() => void submit({ input: initialInput }), 0);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once for the link the page was opened with
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once for what the page was opened with
   }, [initialInput]);
 
   function pickFile(f: File | null | undefined) {

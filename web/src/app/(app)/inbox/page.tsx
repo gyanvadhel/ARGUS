@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Mail } from "lucide-react";
 import { InboxConsole } from "@/components/app/inbox-console";
 import { PageHeader } from "@/components/app/page-header";
@@ -8,7 +9,8 @@ import { cn } from "@/lib/utils";
 
 const ERRORS: Record<string, string> = {
   "not-configured": "Gmail isn't set up on this Argus server yet.",
-  denied: "Google sign-in was cancelled, so nothing was connected.",
+  denied:
+    "Google didn't connect your Gmail: either the sign-in was cancelled, or your account isn't approved yet (see below). You can still paste any email into Scan.",
   state: "That sign-in link expired or didn't start here. Try connecting again.",
   google: "Google didn't finish the sign-in. Try connecting again.",
   save: "Google signed you in, but Argus couldn't save the connection. Try connecting again.",
@@ -53,6 +55,20 @@ function ConnectCard() {
       <a href="/api/gmail/connect" className={cn(buttonVariants(), "mt-7 h-11 rounded-full px-6")}>
         Connect Gmail
       </a>
+      <div className="mt-8 border-t border-border/60 pt-6 text-sm leading-relaxed text-muted-foreground">
+        <p>
+          While Argus is being tested, Google only lets approved accounts connect. If Google says access is blocked,
+          you can still check any email by pasting it:
+        </p>
+        <p className="mt-2 text-foreground/85">
+          In Gmail, open the email, choose ⋮ then <span className="text-foreground">Show original</span>, copy it, and
+          paste it into{" "}
+          <Link href="/scan" className="text-foreground underline underline-offset-4">
+            Scan
+          </Link>
+          .
+        </p>
+      </div>
     </section>
   );
 }

@@ -1,8 +1,8 @@
 import { PageHeader } from "@/components/app/page-header";
 import { ScanConsole } from "@/components/app/scan-console";
 
-export default async function ScanPage({ searchParams }: { searchParams: Promise<{ input?: string }> }) {
-  const { input } = await searchParams;
+export default async function ScanPage({ searchParams }: { searchParams: Promise<{ input?: string; run?: string }> }) {
+  const { input, run } = await searchParams;
   return (
     <>
       <PageHeader
@@ -10,7 +10,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
         title="Scan anything"
         subtitle="Links, emails, texts, phone numbers and files, checked against real threat intelligence in seconds."
       />
-      <ScanConsole initialInput={input?.slice(0, 2000)} />
+      <ScanConsole initialInput={input?.slice(0, 2000)} autoRun={run === "1"} />
     </>
   );
 }

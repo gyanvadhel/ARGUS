@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ScanSearch } from "lucide-react";
+import { FirstSteps } from "@/components/app/first-steps";
 import { KindBreakdown } from "@/components/app/kind-breakdown";
 import { PageHeader } from "@/components/app/page-header";
 import { ProtectionStatus } from "@/components/app/protection-status";
@@ -43,6 +44,8 @@ export default async function DashboardPage() {
           <ScanSearch className="size-4" /> New scan
         </Link>
       </PageHeader>
+
+      {stats.total === 0 && <FirstSteps />}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total scans" value={stats.total} tone="var(--foreground)" />
