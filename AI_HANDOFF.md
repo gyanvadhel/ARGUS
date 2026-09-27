@@ -342,7 +342,28 @@ Both are real models trained on real data, with honest held-out scores; neither 
     reasons.
   - Checks the 12 latest emails, 3 at a time. Already-checked emails show saved verdicts (`mail_scans`).
   - "Check again" re-checks everything; Disconnect revokes at Google.
-- **History:** every scan, filterable by kind.
+- **History:** every scan, filterable by kind, searchable (`?q=`, `lib/search.ts` escapes `%` and `_`). Each row has a
+  delete button (`history/actions.ts`, RLS-limited to your own scans). On phones the type folds into an icon.
+- **Added 2026-09-27:**
+  - **Landing-check limit:** 10 checks a minute per visitor plus 300 a day in total (`app/preview-actions.ts`).
+    - It counts in Supabase via `take_check_slot`. Counters are HMAC-keyed by `lib/rate-limit.ts` (secret:
+      `RATE_LIMIT_SECRET`, falling back to `GMAIL_TOKEN_KEY`), so addresses are never stored and callers can't
+      touch real counters.
+    - If counting fails, the check goes through.
+  - **Engine wake-up:** `components/warm-engine.tsx` pings `/api/warm` on arrival and every 10 minutes while a tab
+    is open, so Render is awake before anyone clicks Check.
+  - **Password reset:**
+    - "Forgot password?" goes to `/forgot`, then an email, then `/auth/confirm?next=/reset-password`, then
+      `/reset-password` (guarded by `proxy.ts`).
+    - A reset link opened in the wrong browser goes back to `/forgot` with an explanation (`afterFailedCode`).
+  - **"Continue with Google":** on login and signup, hidden unless `NEXT_PUBLIC_GOOGLE_SIGNIN=1`. It returns
+    through `/auth/confirm`. It needs Google enabled in Supabase first (§11); otherwise the button would lead to
+    Supabase's raw error.
+  - **First visit:** a new account with no scans sees "Try Argus on a real example" (`first-steps.tsx`). Its links
+    use `/scan?input=…&run=1`, and `run=1` auto-runs any input.
+  - **Analytics:** Vercel Analytics and Speed Insights in the root layout. They start counting once enabled in the
+    Vercel dashboard.
+  - **3D eye on touch screens:** lower pixel ratio, no multisampling, smaller lighting map.
 - **Family:**
   - Trusted contacts, each with an alert on/off toggle.
   - **Connect Telegram** via a QR code or link (`t.me/<bot>?start=<code>`). The page polls `getUpdates` until the
@@ -417,6 +438,7 @@ files). **RLS is on for every table**; policies use `(select auth.uid()) = user_
 | `mail_connections` | one Gmail connection per user: email, **sealed** refresh token |
 | `mail_scans` | (user, gmail message id) → scan id, so checked emails show saved verdicts |
 | `family_alerts` | log of alerts sent or failed: contact, kind (scan/call/test), subject, score, status |
+| `check_usage` | landing-check counters per keyed hash and time window. No direct access (RLS on, no policies); only the `take_check_slot` function touches it, and it clears day-old rows. The advisor's "security definer callable by anon" warning on that function is intentional (see §6). |
 
 - The only security advisory is optional: "Leaked password protection" is off (a Supabase Auth dashboard toggle).
 - **Test data hygiene:** browser test runs with the demo tester account create `phone_reports`/`phone_sightings`
@@ -451,6 +473,8 @@ files). **RLS is on for every table**; policies use `(select auth.uid()) = user_
 | `GMAIL_TOKEN_KEY` | 32 random bytes, base64. It seals Gmail refresh tokens; keep it the same everywhere or existing connections break. |
 | `APP_URL` | the site's own address (OAuth redirect base and link-preview metadataBase) |
 | `TELEGRAM_BOT_TOKEN` | the family-alert bot from @BotFather |
+| `NEXT_PUBLIC_GOOGLE_SIGNIN` | `1` shows "Continue with Google" (only after Google is enabled in Supabase) |
+| `RATE_LIMIT_SECRET` | optional key for the landing-check counters; falls back to `GMAIL_TOKEN_KEY` |
 
 ---
 
@@ -526,6 +550,13 @@ cd web; npm install; cd ..
        `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, so confirming works on any device.
      - `APP_URL` on Vercel was fixed to the live address on 2026-09-26; it had been localhost.
   5. Optional: mark the Vercel secrets as "Sensitive". In the extension options, point to the Render URL and token.
+  6. Google sign-in:
+     - Use a **separate** Google Cloud project, because the Gmail project is in testing mode and that limits every
+       sign-in to test users.
+     - Give it basic scopes only, publish it, and give it a Web client with the redirect URI
+       `https://yvcxqwrgizfmzgohnezj.supabase.co/auth/v1/callback`.
+     - Enable Google in Supabase with that client, then set `NEXT_PUBLIC_GOOGLE_SIGNIN=1` on Vercel and redeploy.
+  7. Vercel dashboard: enable Web Analytics and Speed Insights for the project.
 - **What still works while Render sleeps:** the landing page, auth, dashboard stats, history and evidence pages, the
   Family page, and Gmail connect. Everything that scans pauses until the engine wakes.
 
@@ -650,6 +681,9 @@ cd web; npm install; cd ..
 - **Lint rule:** `react-hooks/set-state-in-effect` is on. For media queries, use `useSyncExternalStore`
   (`lib/use-media.ts`).
 - **Stale types:** after deleting pages, remove `web/.next/types` if types go stale.
+- **Test side effects:** `mobile-audit.mjs` signs in as the demo tester and runs sample checks, adding scans each run.
+  Dedupe afterwards: delete the tester's rows with `row_number() over (partition by kind, input_preview order by
+  created_at desc) > 1`.
 - **Phone-width checks:** compare page width with the device width, never with `window.innerWidth`. Phone browsers
   widen their viewport to fit overflowing content, which hides the bug; an earlier check passed this way while the
   landing page was 677 px wide on a 390 px phone. Use `.superpowers/e2e/mobile-audit.mjs [widths…]`; add
