@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { Iris } from "@/components/iris/iris";
 import { blinkClosure, gazeAngles, type Point } from "@/lib/gaze";
 import { pointer, startPointerTracking } from "@/lib/pointer";
+import { useMedia } from "@/lib/use-media";
 
 export type EyeMood = "idle" | "watching" | "scanning" | "safe" | "danger";
 
@@ -314,6 +315,8 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
 export function EyeScene({ mood = "idle", className, distance = 4.6, offsetY = 0, dive, target }: EyeSceneProps) {
   const wrap = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
+  // Phones: fewer pixels, no multisampling under the bloom, a smaller lighting map. Saves battery on low-end devices.
+  const phone = useMedia("(pointer: coarse)");
 
   useEffect(() => {
     startPointerTracking();
@@ -327,20 +330,20 @@ export function EyeScene({ mood = "idle", className, distance = 4.6, offsetY = 0
   return (
     <div ref={wrap} className={className}>
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={phone ? [1, 1.25] : [1, 1.75]}
         camera={{ position: [0, 0, distance], fov: 30, near: 0.05, far: 50 }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         frameloop={visible ? "always" : "never"}
         fallback={<Iris size={420} className="mx-auto h-full w-auto" />}
       >
         <color attach="background" args={[BG]} />
-        <Environment resolution={256} frames={1}>
+        <Environment resolution={phone ? 128 : 256} frames={1}>
           <Lightformer form="rect" intensity={2.6} position={[-2.5, 3, 4]} scale={[2.6, 1.1, 1]} target={[0, 0, 0]} />
           <Lightformer form="circle" intensity={2} position={[3, 1, 3]} scale={0.8} target={[0, 0, 0]} />
           <Lightformer form="rect" intensity={0.8} color="#a66bff" position={[0, -3, 2]} scale={[5, 0.6, 1]} target={[0, 0, 0]} />
         </Environment>
         <EyeModel mood={mood} distance={distance} offsetY={offsetY} dive={dive} target={target} />
-        <EffectComposer multisampling={4}>
+        <EffectComposer multisampling={phone ? 0 : 4}>
           <Bloom mipmapBlur intensity={1.15} luminanceThreshold={0.18} luminanceSmoothing={0.25} radius={0.72} />
         </EffectComposer>
       </Canvas>

@@ -1,6 +1,9 @@
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Archivo, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { WarmEngine } from "@/components/warm-engine";
 import "./globals.css";
 
 // Archivo's width axis (62–125%) lets headlines condense, and lets the wordmark react to the cursor.
@@ -28,6 +31,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         <div className="grain" aria-hidden />
         <Toaster position="top-center" richColors />
+        <WarmEngine />
+        {/* Visitor counts and real load times; both switch on in the Vercel dashboard. */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
