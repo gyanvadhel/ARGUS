@@ -13,9 +13,10 @@ export function HundredEyes() {
           In the myth, Argus had a hundred eyes and never closed them all at once.
         </p>
         <p className="mt-5 max-w-md leading-relaxed text-muted-foreground">
-          Argus the app works the same way. Every scan asks VirusTotal&apos;s 70+ antivirus engines, URLhaus, MalwareBazaar,
-          Google Safe Browsing and public domain records at the same moment, alongside its own scam model. If one source is
-          slow or down, the others still answer.
+          Argus the app works the same way. Whatever you give it, it looks from several sides at once: live threat lists
+          like URLhaus, OpenPhish and Phishing.Database, a safe visit to the site, its own models trained on real scams,
+          complaint records for phone numbers, and VirusTotal&apos;s 70+ antivirus engines for links and files. If one source
+          is slow or down, the others still answer.
         </p>
       </div>
       <div className="grid grid-cols-6 gap-x-4 gap-y-6 sm:grid-cols-10 max-sm:[&>*:nth-child(n+49)]:hidden">
