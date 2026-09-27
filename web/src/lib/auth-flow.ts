@@ -43,6 +43,18 @@ export function confirmStep(params: URLSearchParams): ConfirmStep {
   return { kind: "nothing" };
 }
 
+/** Where to go when an email link's code can't be exchanged (it only works in the browser that asked for it).
+ *  A signup is confirmed before the code is handed out; a password reset needs a fresh link. */
+export function afterFailedCode(next: string | null): { path: string; query: Record<string, string> } {
+  if (next === "/reset-password") {
+    return {
+      path: "/forgot",
+      query: { error: "That reset link only works in the same browser you asked from, or it has expired. Ask for a new one." },
+    };
+  }
+  return { path: "/login", query: { confirmed: "1" } };
+}
+
 export type Notice = { tone: "info" | "error"; text: string };
 
 const EXPIRED = /invalid or has expired|otp_expired|already been used/i;

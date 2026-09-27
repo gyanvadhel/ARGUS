@@ -22,7 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </p>
       )}
       <div className="mt-8">
-        <AuthForm mode="login" action={signIn} next={params.next} />
+        <AuthForm mode="login" action={signIn} next={params.next} google={process.env.NEXT_PUBLIC_GOOGLE_SIGNIN === "1"} />
       </div>
     </>
   );

@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { confirmStep, loginNotice, signupOutcome } from "./auth-flow";
+import { afterFailedCode, confirmStep, loginNotice, signupOutcome } from "./auth-flow";
+
+describe("afterFailedCode", () => {
+  it("sends a failed password-reset link back to ask for a new one", () => {
+    const to = afterFailedCode("/reset-password");
+    expect(to.path).toBe("/forgot");
+    expect(to.query.error).toMatch(/same browser|new one/i);
+  });
+
+  it("treats any other failed code as a confirmed signup", () => {
+    expect(afterFailedCode("/dashboard")).toEqual({ path: "/login", query: { confirmed: "1" } });
+    expect(afterFailedCode(null)).toEqual({ path: "/login", query: { confirmed: "1" } });
+  });
+});
 
 describe("signupOutcome", () => {
   it("signs straight in when Supabase returns a session", () => {

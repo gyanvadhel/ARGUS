@@ -7,7 +7,7 @@ export default function SignupPage() {
       <h1 className="font-serif text-4xl">Create your watch</h1>
       <p className="mt-2 text-muted-foreground">Free, private, and ready in seconds.</p>
       <div className="mt-8">
-        <AuthForm mode="signup" action={signUp} />
+        <AuthForm mode="signup" action={signUp} google={process.env.NEXT_PUBLIC_GOOGLE_SIGNIN === "1"} />
       </div>
     </>
   );
