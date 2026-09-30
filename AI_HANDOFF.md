@@ -356,7 +356,7 @@ Both are real models trained on real data, with honest held-out scores; neither 
     - "Forgot password?" goes to `/forgot`, then an email, then `/auth/confirm?next=/reset-password`, then
       `/reset-password` (guarded by `proxy.ts`).
     - A reset link opened in the wrong browser goes back to `/forgot` with an explanation (`afterFailedCode`).
-  - **"Continue with Google":** on login and signup, hidden unless `NEXT_PUBLIC_GOOGLE_SIGNIN=1`. It returns
+  - **"Continue with Google":** live on login and signup (hidden unless `NEXT_PUBLIC_GOOGLE_SIGNIN=1`). Google's screen says "continue to yvcxqwrgizfmzgohnezj.supabase.co" until Google verifies the brand. It returns
     through `/auth/confirm`. It needs Google enabled in Supabase first (§11); otherwise the button would lead to
     Supabase's raw error.
   - **First visit:** a new account with no scans sees "Try Argus on a real example" (`first-steps.tsx`). Its links
@@ -542,7 +542,7 @@ cd web; npm install; cd ..
   1. ~~Render Blueprint~~ (done). ~~Vercel `ARGUS_API_URL`~~ (done).
   2. ~~Vercel `ARGUS_API_TOKEN`~~ (done).
   3. Google Cloud OAuth client: add `https://argus-watcher.vercel.app/api/gmail/callback` as a redirect URI.
-  4. Supabase Auth URL configuration: Site URL `https://argus-watcher.vercel.app`, and redirect URLs
+  4. ~~Supabase Auth URL configuration~~ (done 2026-09-30; verified in the auth logs): Site URL `https://argus-watcher.vercel.app`, and redirect URLs
      `https://argus-watcher.vercel.app/**` and `http://localhost:3000/**`.
      - For the demo, turn off "Confirm email": Supabase's built-in email sender only delivers to members of the
        Supabase team.
@@ -550,7 +550,7 @@ cd web; npm install; cd ..
        `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, so confirming works on any device.
      - `APP_URL` on Vercel was fixed to the live address on 2026-09-26; it had been localhost.
   5. Optional: mark the Vercel secrets as "Sensitive". In the extension options, point to the Render URL and token.
-  6. Google sign-in:
+  6. ~~Google sign-in~~ (live since 2026-09-30: separate Google project `306494429614`, published; enabled in Supabase; `NEXT_PUBLIC_GOOGLE_SIGNIN=1` on Vercel). How it was set up:
      - Use a **separate** Google Cloud project, because the Gmail project is in testing mode and that limits every
        sign-in to test users.
      - Give it basic scopes only, publish it, and give it a Web client with the redirect URI
