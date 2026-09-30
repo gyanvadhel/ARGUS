@@ -46,7 +46,8 @@ export default function PrivacyPage() {
         <p>
           To check a link, Argus visits the page from its own server, never from your device, and may look the link up
           on VirusTotal. Files are inspected on Argus&apos;s server; only the file&apos;s fingerprint (a hash), never the
-          file itself, is looked up on VirusTotal. US and Canadian phone numbers are looked up in the FCC&apos;s public
+          file itself, is looked up on VirusTotal. Numbers you look up in Caller ID may be checked against
+          IPQualityScore&apos;s spam and fraud reports, and US and Canadian numbers against the FCC&apos;s public
           complaint records.
         </p>
         <p>
@@ -89,7 +90,7 @@ export default function PrivacyPage() {
       <Section title="Services Argus relies on">
         <p>
           Supabase stores accounts and history. Vercel hosts the website and counts visits without cookies (Vercel
-          Analytics). Render runs the scanning engine. Argus also asks VirusTotal, Google (for Gmail and Google sign-in),
+          Analytics). Render runs the scanning engine. Argus also asks VirusTotal, IPQualityScore (for phone numbers), Google (for Gmail and Google sign-in),
           Telegram (for family alerts), the FCC&apos;s open data, and public threat lists (URLhaus, OpenPhish,
           Phishing.Database) as described above.
         </p>

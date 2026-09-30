@@ -224,7 +224,19 @@ If `ARGUS_API_TOKEN` is set, every endpoint except `/health` requires `Authoriza
   - ≥ 10 complaints: 90, authoritative. 5–9: 80. 2–4: 60. 1: 40.
   - "None in the past year": 25.
   - Complaints aren't proof (caller IDs get spoofed), which is why count and recency decide the weight.
-- **No public spam database exists for Indian numbers,** so +91 numbers rely on the checks above and Argus reports.
+- **No free public spam list exists for Indian numbers.** +91 numbers rely on the checks above, Argus reports,
+  and IPQS once its key is set.
+- **"Phone reputation (IPQS)"** (`intel/ipqs.py`, added 2026-09-30, Caller ID only): IPQualityScore's worldwide
+  spam and fraud reports. It's optional (`IPQS_API_KEY`), and answers are cached for 24 h to save free lookups.
+  - `spammer` + `recent_abuse`: malicious 88. `recent_abuse`: malicious 82. `spammer`: suspicious 70.
+  - A fraud score of 85+ with no reports: 55. A score of 75+, or `risky`: 40. Otherwise clean.
+  - A refusal (such as quota) shows as "unavailable" and isn't cached. Errors never include the URL, which
+    carries the key.
+  - Truecaller has no public API; its lookup API was invite-only and has been defunct since 2017. The
+    third-party ones are scrapers.
+- **Carrier ("Issued by"):** libphonenumber knows who each number series was first issued to, not the current
+  operator. Indian numbers can switch operators and keep their number; the current operator needs a paid live
+  lookup.
 
 ### Emails (`checkers/email.py`)
 - **Sender signal:**
@@ -462,6 +474,7 @@ files). **RLS is on for every table**; policies use `(select auth.uid()) = user_
 | `ARGUS_DEFAULT_REGION` | `IN` (the region for numbers typed without a country code) |
 | `ARGUS_API_TOKEN` | set only when hosted; then every endpoint except /health requires it |
 | `ARGUS_OFFLINE` | `1` disables all live network checks (used by tests) |
+| `IPQS_API_KEY` | optional: IPQualityScore phone spam and fraud reports for Caller ID (free account) |
 
 **`web/.env.local`** (git-ignored; on Vercel, Settings → Environment Variables):
 | Name | Purpose |

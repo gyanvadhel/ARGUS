@@ -16,6 +16,8 @@ services:
         generateValue: true
       - key: VIRUSTOTAL_API_KEY # optional: Render asks for it when you create the service
         sync: false
+      - key: IPQS_API_KEY # optional: phone spam and fraud reports for Caller ID (free account at ipqualityscore.com)
+        sync: false
       - key: ARGUS_DEFAULT_REGION
         value: IN
       - key: OPENBLAS_NUM_THREADS # keep numpy's math buffers small on the 512 MB free plan

@@ -1,6 +1,7 @@
 """Phone number analysis (Caller ID): validation, callback traps, the ARGUS blocklist, community reports and sightings."""
 from __future__ import annotations
 
+import asyncio
 import os
 
 import phonenumbers
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from argus_api.aggregate import combine
 from argus_api.intel.fcc import fcc_signal
+from argus_api.intel.ipqs import ipqs_signal
 from argus_api.models import Signal, Verdict
 from argus_api.risk_engine import get_engine
 
@@ -232,7 +234,8 @@ def check_phone(raw: str, community: Community | None = None, community_reports:
 
 
 async def scan_phone(raw: str, community: Community | None = None) -> Verdict:
-    """Caller ID: the instant checks plus the FCC's complaint records for US and Canadian numbers."""
+    """Caller ID: the instant checks, the FCC's complaint records for US and Canadian numbers, and IPQS's
+    worldwide spam and fraud reports (when a key is set)."""
     parsed, subject, signals = _local_signals(raw, community or Community())
-    signals.append(await fcc_signal(parsed))
+    signals += await asyncio.gather(fcc_signal(parsed), ipqs_signal(parsed))
     return combine("phone", subject, signals)
