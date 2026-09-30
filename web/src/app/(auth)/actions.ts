@@ -1,13 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { APP_URL } from "@/lib/app-url";
 import { signupOutcome } from "@/lib/auth-flow";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error?: string; notice?: string } | undefined;
-
-const APP_URL = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 export async function signIn(_: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim();
@@ -39,18 +38,6 @@ export async function signUp(_: AuthState, formData: FormData): Promise<AuthStat
     return { notice: `We sent a confirmation link to ${outcome.email}. Open it to finish creating your account.` };
   }
   redirect("/dashboard");
-}
-
-/** Hands you to Google; you come back through /auth/confirm, which signs you in. */
-export async function signInWithGoogle(formData: FormData) {
-  const next = safeNext(formData.get("next"));
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${APP_URL}/auth/confirm?next=${encodeURIComponent(next)}` },
-  });
-  if (error || !data.url) redirect(`/login?error=${encodeURIComponent(error?.message ?? "Google sign-in isn't available right now.")}`);
-  redirect(data.url);
 }
 
 export async function requestPasswordReset(_: AuthState, formData: FormData): Promise<AuthState> {

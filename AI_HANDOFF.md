@@ -474,6 +474,7 @@ files). **RLS is on for every table**; policies use `(select auth.uid()) = user_
 | `APP_URL` | the site's own address (OAuth redirect base and link-preview metadataBase) |
 | `TELEGRAM_BOT_TOKEN` | the family-alert bot from @BotFather |
 | `NEXT_PUBLIC_GOOGLE_SIGNIN` | `1` shows "Continue with Google" (only after Google is enabled in Supabase) |
+| `GOOGLE_SIGNIN_CLIENT_ID` | the sign-in Google client's ID (not secret). Set: Google posts back to `/api/auth/google/callback` and Supabase checks the ID token, so Google's screen names this site. Unset: Supabase's hosted flow, whose screen names the Supabase project. |
 | `RATE_LIMIT_SECRET` | optional key for the landing-check counters; falls back to `GMAIL_TOKEN_KEY` |
 
 ---

@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signInWithGoogle, type AuthState } from "@/app/(auth)/actions";
+import type { AuthState } from "@/app/(auth)/actions";
 
 type Props = {
   mode: "login" | "signup";
@@ -22,7 +22,8 @@ export function AuthForm({ mode, action, next, google = false }: Props) {
     <div className="space-y-5">
       {google && (
         <>
-          <form action={signInWithGoogle}>
+          {/* A plain request, not a server action: this route hands you over to Google. */}
+          <form action="/api/auth/google" method="get">
             {next && <input type="hidden" name="next" value={next} />}
             <Button type="submit" variant="outline" className="h-11 w-full rounded-full text-sm">
               Continue with Google
