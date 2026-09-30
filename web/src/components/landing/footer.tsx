@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { WatchingEye } from "@/components/eye/watching-eye";
 
 export function Footer() {
@@ -8,7 +9,8 @@ export function Footer() {
           <WatchingEye className="h-4 w-6 text-foreground" />
           <span className="font-display text-xl">Argus</span>
         </div>
-        <p>Threat data from VirusTotal, abuse.ch, Google Safe Browsing and public domain records.</p>
+        <p>Threat data from URLhaus (abuse.ch), OpenPhish, Phishing.Database, VirusTotal and FCC complaint records.</p>
+        <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
       </div>
     </footer>
   );
