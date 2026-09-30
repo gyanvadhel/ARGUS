@@ -540,7 +540,8 @@ cd web; npm install; cd ..
   - The first deploys were built from the repo root by mistake; fixed on 2026-09-25 by setting the Root Directory.
 - **Render (engine): deployed 2026-09-26 at https://argus-api-xsea.onrender.com.**
   - `/health` is OK with feeds loaded. `/scan` correctly demands the token.
-  - VirusTotal is on there (the user added `VIRUSTOTAL_API_KEY` on Render).
+  - VirusTotal is on there (the user added `VIRUSTOTAL_API_KEY` on Render). IPQS is on too (`IPQS_API_KEY`,
+    added 2026-09-30); a live lookup of the known robocaller returned "reported for spam, risk 100/100".
   - `argus-api.onrender.com` (no suffix) is **someone else's** Node app ("Argus backend is live"); Render names are
     first come, first served.
   - The engine auto-deploys from GitHub `main`. The ML models were confirmed live there on 2026-09-26
