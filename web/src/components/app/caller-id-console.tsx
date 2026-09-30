@@ -57,7 +57,7 @@ function IdentityCard({ found, onSimulate }: { found: Found; onSimulate: () => v
             <dd className="mt-0.5">{String(info.region ?? "Unknown")}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Carrier</dt>
+            <dt className="text-muted-foreground">Issued by</dt>
             <dd className="mt-0.5">{String(info.carrier ?? "Not listed")}</dd>
           </div>
           <div>
@@ -65,6 +65,13 @@ function IdentityCard({ found, onSimulate }: { found: Found; onSimulate: () => v
             <dd className="mt-0.5 capitalize">{String(info.line_type ?? "Unknown")}</dd>
           </div>
         </dl>
+        {/* Carrier data (libphonenumber) knows which operator each number series was first given to, not who carries it now. */}
+        {info.carrier ? (
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            The carrier this number was first issued to. People can switch carriers and keep their number, so it may be
+            with someone else now.
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-7 border-t border-border/60 pt-6">

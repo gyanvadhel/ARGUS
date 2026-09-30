@@ -10,7 +10,7 @@ const DETAIL_KEYS: [string, string][] = [
   ["sha256", "SHA-256"],
   ["domain", "Domain"],
   ["registered", "Registered"],
-  ["carrier", "Carrier"],
+  ["carrier", "First issued by"],
   ["line_type", "Line type"],
   ["country", "Country"],
   ["e164", "Number"],
