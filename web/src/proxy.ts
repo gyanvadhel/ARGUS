@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { loginNext } from "@/lib/safe-next";
 
 const APP_ROUTES = ["/dashboard", "/scan", "/history", "/caller-id", "/inbox", "/family", "/reset-password"];
 
@@ -37,7 +38,8 @@ export async function proxy(request: NextRequest) {
   if (!user && isApp) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", path);
+    url.search = "";
+    url.searchParams.set("next", loginNext(path, request.nextUrl.search));
     return NextResponse.redirect(url);
   }
   if (user && (path === "/login" || path === "/signup")) {
@@ -50,5 +52,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

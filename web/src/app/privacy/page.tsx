@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         <span className="font-display text-2xl">Argus</span>
       </Link>
       <h1 className="font-display mt-12 text-[clamp(2.6rem,8vw,4.5rem)]">Privacy policy</h1>
-      <p className="mt-3 text-sm text-muted-foreground">Last updated 27 September 2026</p>
+      <p className="mt-3 text-sm text-muted-foreground">Last updated 30 September 2026</p>
       <p className="mt-8 text-lg leading-relaxed text-foreground/85">
         Argus checks links, emails, texts, phone numbers and files for scams. This page says exactly what it keeps, who
         else sees anything, and how to remove it. Argus doesn&apos;t sell data or show ads.
@@ -45,10 +45,27 @@ export default function PrivacyPage() {
         </p>
         <p>
           To check a link, Argus visits the page from its own server, never from your device, and may look the link up
-          on VirusTotal. Files are inspected on Argus&apos;s server; only the file&apos;s fingerprint (a hash), never the
-          file itself, is looked up on VirusTotal. Numbers you look up in Caller ID may be checked against
-          IPQualityScore&apos;s spam and fraud reports, and US and Canadian numbers against the FCC&apos;s public
-          complaint records.
+          on VirusTotal, Google Safe Browsing, URLhaus and AlienVault OTX. For a site whose registry publishes no age,
+          Argus may look up its public certificate records on crt.sh. Files are inspected on Argus&apos;s server; only
+          the file&apos;s fingerprint (a hash), never the file itself, is looked up on VirusTotal, MalwareBazaar and
+          AlienVault OTX. For an email, the address of the server that sent it may be looked up on AbuseIPDB. Numbers
+          you look up in Caller ID may be checked against IPQualityScore&apos;s spam and fraud reports, and US and
+          Canadian numbers against the FCC&apos;s public complaint records.
+        </p>
+        <p>
+          Screenshots and QR codes are read on your device, and the image never leaves it: only the words or link read
+          from it are checked, like anything you paste. The first time you read a screenshot, your browser downloads the
+          reading software from jsDelivr, a public file server. The camera, when you scan a QR code, is only used while
+          the scanner is open, and nothing is recorded.
+        </p>
+        <p>
+          A password you check never leaves your device. Argus sends only the first 5 characters of its scrambled
+          fingerprint (a SHA-1 hash) to Have I Been Pwned, which answers with hundreds of possible matches that are
+          compared on your device. Nothing about it is saved.
+        </p>
+        <p>
+          If you install Argus on Android and share something to it from another app, it opens on the Scan page. A shared
+          image is held on your device only until the Scan page reads it.
         </p>
         <p>
           The quick check on the home page needs no account and saves nothing. To stop it being overused, Argus counts
@@ -90,9 +107,11 @@ export default function PrivacyPage() {
       <Section title="Services Argus relies on">
         <p>
           Supabase stores accounts and history. Vercel hosts the website and counts visits without cookies (Vercel
-          Analytics). Render runs the scanning engine. Argus also asks VirusTotal, IPQualityScore (for phone numbers), Google (for Gmail and Google sign-in),
-          Telegram (for family alerts), the FCC&apos;s open data, and public threat lists (URLhaus, OpenPhish,
-          Phishing.Database) as described above.
+          Analytics). Render runs the scanning engine. Argus also asks VirusTotal, Google Safe Browsing, abuse.ch
+          (URLhaus and MalwareBazaar), AlienVault OTX, AbuseIPDB, crt.sh, IPQualityScore (for phone numbers), Have I
+          Been Pwned (for password checks), Google (for Gmail and Google sign-in), Telegram (for family alerts), the
+          FCC&apos;s open data, and public threat lists (OpenPhish, Phishing.Database) as described above. jsDelivr
+          serves the screenshot reader.
         </p>
       </Section>
 

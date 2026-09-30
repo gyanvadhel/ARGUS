@@ -11,6 +11,9 @@ variable names are listed, values are not.
   engine uses free live threat feeds, a safe live visit to the site, look-alike detection, phone-number analysis,
   and two machine-learning models of its own (scam texts, phishing domain names; see §5a). VirusTotal is only an
   optional extra.
+- Since 2026-09-30 the Scan page also reads **QR codes** (camera or picture; UPI codes get a scam warning) and
+  **screenshots** (on-device OCR), checks **leaked passwords** (Have I Been Pwned, k-anonymity), and installed
+  on Android it takes **shares** from other apps. The engine gained AlienVault OTX, AbuseIPDB and crt.sh (§5).
 - **Stack:**
   - `web/`: Next.js 16 + React 19 + Tailwind v4 + Supabase auth/Postgres.
   - `api/`: Python FastAPI scanning engine.
@@ -197,6 +200,17 @@ If `ARGUS_API_TOKEN` is set, every endpoint except `/health` requires `Authoriza
       is dropped (trust comes from where a link lands).
 - **Optional keyed:** URLhaus API, Google Safe Browsing, VirusTotal (1 engine = 20, 2 = 45, ≥ 3 = malicious and
   authoritative), RDAP domain age (< 30 days = 65, < 180 days = 35).
+- **"AlienVault OTX"** (`intel/otx.py`, `OTX_API_KEY`, added 2026-09-30): security researchers' threat reports
+  ("pulses") naming the site.
+  - 1 report: suspicious 40. 2: suspicious 60. ≥ 3: malicious 82 (not authoritative: community reports can be wrong).
+  - OTX's own known-good list (`validation`) wins over any number of reports.
+  - Skipped for well-known sites (they appear in pulses as the brand being copied) and IPs. Pages on
+    publish-anything platforms are looked up by their own hostname (`hostname/…`), everything else by registered
+    domain (`domain/…`). Cached 6 h.
+- **"Certificate history (crt.sh)"** (`intel/certs.py`, keyless, added 2026-09-30): the site's first logged
+  security certificate stands in for its age, **only when RDAP gave no age** (`site_age()` in `url.py` asks crt.sh
+  after RDAP, and only then). < 14 days: suspicious 45. < 90 days: 30. Older: clean. Skipped for well-known sites,
+  platforms and IPs, and in offline mode. Cached 24 h.
 - **Safe visiting of links found in mail** (`visit_decision`):
   - Links the user pastes are always visited.
   - For Gmail inbox mail, links that look one-time (unsubscribe, verify, reset, magic, token=, …), shorteners and
@@ -248,6 +262,13 @@ If `ARGUS_API_TOKEN` is set, every endpoint except `/health` requires `Authoriza
   Tranco top-100k site. Free-mail domains (gmail.com, outlook.com, …) never earn trust.
 - **Body:** the scam-text model (with the stricter email bar, §5a), scam phrase rules, phone numbers
   (blocklist + FCC), and up to 3 links (with the mailbox visit rules).
+- **"Sending server (AbuseIPDB)"** (`intel/abuseipdb.py`, `ABUSEIPDB_API_KEY`, added 2026-09-30): abuse reports on
+  the server that sent the email.
+  - The address comes from `Received-SPF`'s `client-ip=`, or else the first public address in the `Received`
+    lines. No address in the headers means no signal (pasted bodies without headers).
+  - Abuse confidence ≥ 75%: malicious 78. ≥ 25%: suspicious 40. Otherwise, or on AbuseIPDB's known-good list:
+    clean with weight 0.3 and no trust (big mail providers send for everyone).
+  - Cached 24 h (1,000 free lookups a day). Gmail's `toRawEmail` keeps the newest 3 `Received` lines for this.
 
 ### Texts (`checkers/text.py`)
 - The scam-text model (§5a), scam phrase rules, the local intel CSV, phone numbers and links.
@@ -261,6 +282,7 @@ If `ARGUS_API_TOKEN` is set, every endpoint except `/health` requires `Authoriza
   ≥ 50 engines analysed it, **and** the local inspection is clean (a good reputation never excuses a disguised
   file).
 - MalwareBazaar (optional key), and the scam-text model on text contents (weight 0.5, stricter bar).
+- **AlienVault OTX** hash lookup (optional `OTX_API_KEY`): a file fingerprint in any threat report is malicious 90.
 
 ### 5a. Argus's own machine-learning models (added 2026-09-26)
 Both are real models trained on real data, with honest held-out scores; neither is a stand-in.
@@ -376,6 +398,31 @@ Both are real models trained on real data, with honest held-out scores; neither 
   - **Analytics:** Vercel Analytics and Speed Insights in the root layout. They start counting once enabled in the
     Vercel dashboard.
   - **3D eye on touch screens:** lower pixel ratio, no multisampling, smaller lighting map.
+- **Added 2026-09-30 (free extras on the Scan page):** three tool buttons under the scan box (a row of tiles on
+  phones), all working on the device.
+  - **Scan a QR code** (`qr-camera.tsx`): the camera, read by the browser's `BarcodeDetector` where there is one,
+    else `jsqr` (`lib/image-read.ts`). Nothing is recorded.
+  - **Read a screenshot** (also any image uploaded, dropped or pasted into the box): first looks for a QR code, then
+    reads the words with **tesseract.js** (English + Hindi, `textFromImage`) and scans that text. The image never
+    leaves the device. The first read downloads the reading model from jsDelivr. The box then says "Read from your
+    image on this device" and offers "Check the image file instead" (the old file check).
+  - **What a QR code becomes** (`lib/qr.ts`): links go to a link check, `tel:` to Caller ID, text to a text check.
+    **UPI codes** (`upi://pay`, `upi://mandate`) get `upi-card.tsx`, which explains "This code sends money. It never
+    receives it." with the payee, amount and note. It isn't scored (the engine has nothing to look up), and it isn't
+    saved to history.
+  - **Check a password** (`password-check.tsx`, `lib/pwned.ts`): Have I Been Pwned's k-anonymity range API, called
+    from the browser with `Add-Padding`. Only the first 5 characters of the SHA-1 go out. It says how many times the
+    password was seen in breaches, or "Not found… That doesn't make it strong" (never "safe").
+  - **Share to Argus (Android, installed):** `manifest.ts` has a POST multipart `share_target` for title, text,
+    url and an image. `public/sw.js` (registered by `components/service-worker.tsx`) catches the POST to `/share`:
+    an image is put in Cache Storage (`argus-shared` / `/shared-image`) and the page goes to `/scan?shared=image`,
+    which reads it. Text and links go to `GET /share`, which builds the input (`lib/share.ts`) and redirects to
+    `/scan?input=…&run=1`. `POST /share` on the server is the fallback when the service worker isn't running yet
+    (text works; an image leads to `?shared=retry`, "share it again").
+  - `install-hint.tsx` shows an "Install Argus" button on Android when Chrome fires `beforeinstallprompt`.
+  - Signed-out visitors now keep the query through sign-in: `proxy.ts` uses `loginNext()` (in `safe-next.ts`), so
+    `next=/scan?input=…&run=1` survives up to 2,500 characters.
+  - E2E: `.superpowers/e2e/free-features.mjs` (18 checks, including a fake camera fed an MJPEG of a QR code).
 - **Family:**
   - Trusted contacts, each with an alert on/off toggle.
   - **Connect Telegram** via a QR code or link (`t.me/<bot>?start=<code>`). The page polls `getUpdates` until the
@@ -399,7 +446,8 @@ Both are real models trained on real data, with honest held-out scores; neither 
 - **Token storage:** refresh tokens are sealed with **AES-256-GCM** (`lib/token-box.ts`, key `GMAIL_TOKEN_KEY`)
   before going into `mail_connections`. Access tokens are cached in memory for about 50 minutes.
 - **What the engine receives:** each email is converted to a compact RFC 822 message and scanned with
-  `mailbox: inbox|spam`. The message keeps only the headers used for judging, plus text and HTML bodies capped at
+  `mailbox: inbox|spam`. The message keeps only the headers used for judging (plus the newest 3 `Received` lines,
+  for the sending-server check), and text and HTML bodies capped at
   30,000 characters each, with no attachments. The engine accepts up to 100,000 characters per input.
 - **Testing mode:** the Google app is in testing mode. Only listed test users can connect, and they must reconnect
   every 7 days.
@@ -470,7 +518,9 @@ files). **RLS is on for every table**; policies use `(select auth.uid()) = user_
 | Name | Purpose |
 |---|---|
 | `VIRUSTOTAL_API_KEY` | optional: 70+ antivirus engines for links and files (free tier: 4 lookups/min) |
-| `GOOGLE_SAFE_BROWSING_KEY`, `ABUSECH_AUTH_KEY` | optional extras (not set) |
+| `GOOGLE_SAFE_BROWSING_KEY`, `ABUSECH_AUTH_KEY` | optional: Google's phishing/malware list; URLhaus API + MalwareBazaar (not set yet on 2026-09-30) |
+| `OTX_API_KEY` | optional: AlienVault OTX threat reports for links and files (free account; not set yet on 2026-09-30) |
+| `ABUSEIPDB_API_KEY` | optional: abuse reports on the server that sent an email (free, 1,000/day; not set yet on 2026-09-30) |
 | `ARGUS_DEFAULT_REGION` | `IN` (the region for numbers typed without a country code) |
 | `ARGUS_API_TOKEN` | set only when hosted; then every endpoint except /health requires it |
 | `ARGUS_OFFLINE` | `1` disables all live network checks (used by tests) |
@@ -550,8 +600,10 @@ cd web; npm install; cd ..
   - name `argus-api`, region singapore, rootDir `api`
   - build `pip install -r requirements.txt`
   - start `uvicorn argus_api.main:app --host 0.0.0.0 --port $PORT`, health check `/health`
-  - a generated `ARGUS_API_TOKEN`, a `VIRUSTOTAL_API_KEY` prompt, `ARGUS_DEFAULT_REGION=IN`, and the OpenBLAS/OMP
-    thread limits
+  - a generated `ARGUS_API_TOKEN`, prompts for every optional key (`VIRUSTOTAL_API_KEY`, `IPQS_API_KEY`,
+    `GOOGLE_SAFE_BROWSING_KEY`, `ABUSECH_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`), `ARGUS_DEFAULT_REGION=IN`,
+    and the OpenBLAS/OMP thread limits. Blueprint prompts only appear when a service is created: on the existing
+    service, keys are added by hand in Render → Environment.
   - It sleeps after 15 min idle; the first request after that takes about a minute, and the website shows "waking up".
 - **Remaining steps:**
   1. ~~Render Blueprint~~ (done). ~~Vercel `ARGUS_API_URL`~~ (done).
@@ -681,6 +733,11 @@ cd web; npm install; cd ..
   - Social-engineering pleas with no spammy wording ("stuck abroad, send money") can slip past it.
   - The link model sees only the domain name, so it catches about a quarter of phishing domains alone. It's kept
     deliberately cautious because descriptive small-business names look similar.
+- **Screenshots and sharing:**
+  - Screenshot reading (tesseract.js) misreads small or stylised text, which is why the text stays editable. The
+    first read downloads a few MB.
+  - Share to Argus only exists on Android, once Argus is installed from Chrome. iPhones have no web share target.
+  - UPI codes are explained, not scored: nothing free can tell a scammer's UPI ID from a shop's.
 
 ---
 
@@ -714,3 +771,5 @@ cd web; npm install; cd ..
 3. Test the Telegram flow end to end with the real bot token and a phone.
 4. Before the demo: open the site a couple of minutes early to wake Render. Clean test data with the SQL above.
 5. Optional: Supabase leaked-password protection, and marking Vercel secrets as Sensitive.
+6. Add the four free engine keys on Render → Environment (and in `api/.env` locally): `GOOGLE_SAFE_BROWSING_KEY`,
+   `ABUSECH_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`. Until then those sources show "not configured".

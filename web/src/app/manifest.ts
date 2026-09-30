@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
-// "Add to home screen": Argus opens like an app, with its own icon.
+// "Add to home screen": Argus opens like an app, with its own icon. Installed on Android, it also appears in other
+// apps' Share menus, for links, messages and screenshots (handled by public/sw.js and app/share/route.ts).
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Argus",
@@ -15,5 +16,11 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    share_target: {
+      action: "/share",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: { title: "title", text: "text", url: "url", files: [{ name: "image", accept: ["image/*"] }] },
+    },
   };
 }

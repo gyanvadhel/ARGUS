@@ -2,7 +2,8 @@ import { LevelPill } from "@/components/app/level-pill";
 import { WatchingEye } from "@/components/eye/watching-eye";
 import type { RiskLevel } from "@/lib/types";
 
-const CHANNELS: { name: string; body: string; subject: string; score: number; level: RiskLevel; note: string }[] = [
+// A line without a score shows a reading, not an engine verdict (UPI codes aren't scored, they're explained).
+const CHANNELS: { name: string; body: string; subject: string; score?: number; level?: RiskLevel; note: string }[] = [
   {
     name: "Links",
     body: "Live phishing and malware feeds, look-alikes of famous sites, and a safe visit to the page itself: where it redirects and what it asks for.",
@@ -29,7 +30,7 @@ const CHANNELS: { name: string; body: string; subject: string; score: number; le
   },
   {
     name: "Texts",
-    body: "Urgency, secrecy, gift cards and fake arrests, read the way a scammer wrote them. Links and numbers inside are checked too.",
+    body: "Urgency, secrecy, gift cards and fake arrests, read the way a scammer wrote them, even from a screenshot. Links and numbers inside are checked too.",
     subject: "Your Google listing will be removed. Call 1-877-556-9255",
     score: 90,
     level: "HIGH RISK",
@@ -42,6 +43,12 @@ const CHANNELS: { name: string; body: string; subject: string; score: number; le
     score: 90,
     level: "HIGH RISK",
     note: "Reported to the FCC for robocalls about Google listings",
+  },
+  {
+    name: "QR codes",
+    body: "Read through your camera or from a picture, right on your device. Links get the full link check, and UPI codes get the one rule that stops QR scams.",
+    subject: "upi://pay?pa=refund.desk@ybl&am=4999",
+    note: "A UPI code only ever sends money. “Scan to receive” is always a scam",
   },
 ];
 
@@ -68,7 +75,7 @@ export function Channels() {
                   <div className="overflow-hidden">
                     <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 px-4 py-3">
                       <span className="font-mono text-xs text-foreground/80">{c.subject}</span>
-                      <LevelPill level={c.level} score={c.score} />
+                      {c.level && c.score !== undefined && <LevelPill level={c.level} score={c.score} />}
                       <span className="text-sm text-muted-foreground">{c.note}</span>
                     </div>
                   </div>
