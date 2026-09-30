@@ -48,7 +48,6 @@ fun SettingsScreen(container: AppContainer, go: (String) -> Unit) {
     }
 }
 
-@Composable fun QrCameraScreen(container: AppContainer, back: () -> Unit) = Placeholder("Scan a QR code")
 @Composable fun ArgusScreen(container: AppContainer) = Placeholder("Argus")
 @Composable fun FamilyScreen(container: AppContainer, go: (String) -> Unit, back: () -> Unit) = Placeholder("Family")
 @Composable fun JoinFamilyScreen(container: AppContainer, code: String, go: (String) -> Unit, back: () -> Unit) = Placeholder("Join a family")

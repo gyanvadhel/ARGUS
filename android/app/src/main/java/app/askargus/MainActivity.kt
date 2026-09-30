@@ -14,7 +14,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.content.IntentCompat
 import app.askargus.core.HandoffPlan
+import app.askargus.core.Incoming
+import app.askargus.core.IncomingParser
 import app.askargus.ui.auth.GoogleSignIn
 import app.askargus.ui.components.LocalTouch
 import app.askargus.ui.components.TouchState
@@ -23,13 +26,16 @@ import app.askargus.ui.nav.ArgusNav
 import app.askargus.ui.theme.ArgusColors
 import app.askargus.ui.theme.ArgusTheme
 import app.askargus.ui.theme.argusEdgeToEdge
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity(), Host {
     private val container get() = (application as ArgusApp).container
+    private val incoming = MutableStateFlow<Incoming?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         argusEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) handle(intent)
         setContent {
             val touch = remember { TouchState() }
             val onboarded by container.prefs.onboarded.collectAsState(initial = null)
@@ -37,11 +43,28 @@ class MainActivity : ComponentActivity(), Host {
             ArgusTheme {
                 CompositionLocalProvider(LocalTouch provides touch, LocalHost provides this) {
                     Box(Modifier.fillMaxSize().background(ArgusColors.Background).trackTouches(touch)) {
-                        onboarded?.let { ArgusNav(container, it) }
+                        onboarded?.let { ArgusNav(container, it, incoming) { incoming.value = null } }
                     }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    private fun handle(intent: Intent?) {
+        intent ?: return
+        val stream = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+        incoming.value = IncomingParser.parse(
+            intent.action, intent.type,
+            intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString(),
+            intent.getStringExtra(Intent.EXTRA_SUBJECT),
+            stream?.toString(),
+            intent.dataString,
+        ) ?: incoming.value
     }
 
     // Task 14 replaces this with signed-in website pages (handoff + Trusted Web Activity).

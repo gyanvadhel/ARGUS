@@ -1,5 +1,6 @@
 package app.askargus.ui.nav
 
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -12,6 +13,8 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -24,18 +27,21 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.askargus.AppContainer
 import app.askargus.R
+import app.askargus.core.Incoming
 import app.askargus.ui.activity.ActivityScreen
 import app.askargus.ui.ArgusScreen
 import app.askargus.ui.FamilyScreen
 import app.askargus.ui.HomeScreen
 import app.askargus.ui.JoinFamilyScreen
 import app.askargus.ui.LicensesScreen
-import app.askargus.ui.QrCameraScreen
+import app.askargus.ui.scan.QrCameraScreen
 import app.askargus.ui.scan.ScanScreen
+import app.askargus.ui.scan.scanViewModel
 import app.askargus.ui.SettingsScreen
 import app.askargus.ui.auth.SignInScreen
 import app.askargus.ui.onboarding.WelcomeScreen
 import app.askargus.ui.theme.ArgusColors
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 object Routes {
@@ -57,7 +63,7 @@ object Routes {
 private data class Tab(val route: String, val label: String, val icon: @Composable () -> Unit)
 
 @Composable
-fun ArgusNav(container: AppContainer, onboarded: Boolean) {
+fun ArgusNav(container: AppContainer, onboarded: Boolean, incoming: StateFlow<Incoming?>, onIncomingHandled: () -> Unit) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
@@ -73,6 +79,22 @@ fun ArgusNav(container: AppContainer, onboarded: Boolean) {
     val finishOnboarding: () -> Unit = {
         scope.launch { container.prefs.setOnboarded() }
         nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
+    }
+    val scan = scanViewModel(container)
+    val pending by incoming.collectAsState()
+    LaunchedEffect(pending) {
+        when (val item = pending ?: return@LaunchedEffect) {
+            is Incoming.Text -> {
+                scan.check(item.text, "share")
+                nav.navigate(Routes.SCAN) { launchSingleTop = true }
+            }
+            is Incoming.Image -> {
+                scan.image(Uri.parse(item.uri))
+                nav.navigate(Routes.SCAN) { launchSingleTop = true }
+            }
+            is Incoming.Join -> Unit // Task 14 opens the join screen
+        }
+        onIncomingHandled()
     }
 
     Scaffold(
