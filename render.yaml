@@ -18,6 +18,14 @@ services:
         sync: false
       - key: IPQS_API_KEY # optional: phone spam and fraud reports for Caller ID (free account at ipqualityscore.com)
         sync: false
+      - key: GOOGLE_SAFE_BROWSING_KEY # optional: Google's list of phishing and malware sites
+        sync: false
+      - key: ABUSECH_AUTH_KEY # optional: URLhaus and MalwareBazaar lookups (free account at auth.abuse.ch)
+        sync: false
+      - key: OTX_API_KEY # optional: security researchers' threat reports (free account at otx.alienvault.com)
+        sync: false
+      - key: ABUSEIPDB_API_KEY # optional: abuse reports on email sending servers (free account at abuseipdb.com)
+        sync: false
       - key: ARGUS_DEFAULT_REGION
         value: IN
       - key: OPENBLAS_NUM_THREADS # keep numpy's math buffers small on the 512 MB free plan

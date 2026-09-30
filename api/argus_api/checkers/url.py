@@ -7,7 +7,8 @@ Every link is judged on:
   3. popularity (Tranco top sites) as positive evidence, and look-alikes of the 10,000 most visited sites
   4. a live check: does the domain exist, is its certificate valid, where do redirects lead, and what the
      page actually does (fake logins, card/code fields, hidden scripts, app downloads)
-  5. optional keyed services (VirusTotal, Google Safe Browsing, URLhaus API) and domain age (RDAP)
+  5. optional keyed services (VirusTotal, Google Safe Browsing, URLhaus API, AlienVault OTX) and the site's age
+     (RDAP registration date, or its first security certificate when the registry publishes no date)
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ from argus_api import config
 from argus_api.aggregate import combine
 from argus_api.checkers.vt import VT_BASE, vt_rate_limited, vt_stats_signal
 from argus_api.http import guarded, make_client, unavailable
-from argus_api.intel import feeds, netcheck
+from argus_api.intel import certs, feeds, netcheck, otx
 from argus_api.intel.brands import BRAND_DOMAINS, brand_name, is_official
 from argus_api.intel.page import analyze_page
 from argus_api.ml import phish_link
@@ -605,6 +606,24 @@ async def domain_age(client: httpx.AsyncClient, host: str) -> Signal:
                   evidence=evidence)
 
 
+async def site_age(client: httpx.AsyncClient, host: str) -> list[Signal]:
+    """The registry's date first; certificate history only when the registry has none (and for a site of its own)."""
+    rdap = await guarded("Domain age (RDAP)", domain_age(client, host))
+    if not certs.needed(rdap) or not host or _is_ip(host) or platform_of(host) or is_popular(host):
+        return [rdap]
+    cert = await guarded(certs.SOURCE, certs.cert_age_signal(client, registrable_domain(host)), timeout=10)
+    return [rdap, cert] if cert else [rdap]
+
+
+async def otx_link(client: httpx.AsyncClient, host: str) -> Signal | None:
+    """Well-known sites are skipped: they turn up in threat reports as the brand being copied, not the copy."""
+    if not host or _is_ip(host) or is_popular(host):
+        return None
+    if platform_of(host):
+        return await otx.otx_signal(client, "hostname", host)
+    return await otx.otx_signal(client, "domain", registrable_domain(host))
+
+
 LINK_MODEL = "ARGUS ML (link)"
 
 
@@ -679,7 +698,8 @@ async def check_url(raw: str, skip_visit: str | None = None) -> Verdict:
                 guarded("URLhaus", urlhaus(client, url)),
                 guarded("Google Safe Browsing", safe_browsing(client, url)),
                 guarded("VirusTotal", virustotal_url(client, url)),
-                guarded("Domain age (RDAP)", domain_age(client, host)),
+                guarded(otx.SOURCE, otx_link(client, host)),
+                site_age(client, host),
             ),
             return_exceptions=True,
         )
@@ -700,5 +720,6 @@ async def check_url(raw: str, skip_visit: str | None = None) -> Verdict:
     if skip_visit:
         signals.append(Signal(source="Page visit", status="unknown", score=0, weight=0, summary=skip_visit))
     if isinstance(remote, list):
-        signals += remote
+        *keyed, ages = remote
+        signals += [s for s in keyed if s] + ages
     return combine("url", url, signals)

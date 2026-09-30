@@ -64,6 +64,12 @@ describe("toRawEmail", () => {
     expect(raw).toContain("Subject: Your receipt");
     expect(raw).toContain("Authentication-Results: mx.google.com; spf=pass");
   });
+  it("keeps only the newest few Received lines, which name the server that sent it", () => {
+    const long = structuredClone(MESSAGE);
+    long.payload.headers.push(...Array.from({ length: 30 }, (_, i) => ({ name: "Received", value: `from relay${i}.example` })));
+    const kept = toRawEmail(long).split("\r\n").filter((line) => line.startsWith("Received:"));
+    expect(kept).toEqual(["Received: from mail.paypal.com by mx.google.com", "Received: from relay0.example", "Received: from relay1.example"]);
+  });
   it("carries the text and HTML bodies, with their links, but not attachments", () => {
     expect(raw).toContain("You sent $20.00 to Alice.");
     expect(raw).toContain("https://www.paypal.com/activity");

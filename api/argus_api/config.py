@@ -12,6 +12,8 @@ KEY_NAMES = {
     "Google Safe Browsing": "GOOGLE_SAFE_BROWSING_KEY",
     "abuse.ch (URLhaus + MalwareBazaar)": "ABUSECH_AUTH_KEY",
     "IPQualityScore (phone reputation)": "IPQS_API_KEY",
+    "AlienVault OTX (threat reports)": "OTX_API_KEY",
+    "AbuseIPDB (email sending servers)": "ABUSEIPDB_API_KEY",
 }
 
 

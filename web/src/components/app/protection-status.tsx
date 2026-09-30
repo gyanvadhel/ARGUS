@@ -8,6 +8,7 @@ const BUILT_IN = [
   "Look-alike check",
   "Live page check",
   "Domain age",
+  "Certificate history",
   "Sender checks",
   "Number validation",
   "FCC complaints",

@@ -1,4 +1,4 @@
-"""File analysis: local inspection + VirusTotal + MalwareBazaar (hash lookups, the file never leaves the server)."""
+"""File analysis: local inspection + VirusTotal + MalwareBazaar + AlienVault OTX (hash lookups, the file never leaves the server)."""
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +12,7 @@ from argus_api.aggregate import combine
 from argus_api.checkers.text import ml_signal
 from argus_api.checkers.vt import VT_BASE, vt_rate_limited, vt_stats_signal
 from argus_api.http import guarded, make_client, unavailable
+from argus_api.intel import otx
 from argus_api.ml.scam_text import LONG_TEXT_THRESHOLD
 from argus_api.models import Signal, Verdict
 
@@ -131,6 +132,7 @@ async def check_file(filename: str, data: bytes) -> Verdict:
         remote = await asyncio.gather(
             guarded("VirusTotal", virustotal_file(client, sha256)),
             guarded("MalwareBazaar", malwarebazaar(client, sha256)),
+            guarded(otx.SOURCE, otx.otx_signal(client, "file", sha256)),
         )
     if local.status != "clean":
         # A good reputation vouches for what's inside, never for a file that's dressed up to trick you.

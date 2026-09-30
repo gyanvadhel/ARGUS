@@ -12,7 +12,7 @@ def make_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True, headers={"User-Agent": "ARGUS-Scanner/1.0"})
 
 
-async def guarded(source: str, pending: Awaitable[Signal], timeout: float = 8.0) -> Signal:
+async def guarded(source: str, pending: Awaitable[Signal | None], timeout: float = 8.0) -> Signal | None:
     """Never let one flaky source break a scan."""
     try:
         return await asyncio.wait_for(pending, timeout)

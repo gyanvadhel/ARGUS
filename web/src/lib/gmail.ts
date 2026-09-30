@@ -140,15 +140,19 @@ export function toMeta(m: GmailMessage): MailMeta {
 
 export { senderName } from "./mail-format";
 
-// Only the headers Argus judges a sender by; the Received chain alone can run to tens of kilobytes.
+// Only the headers Argus judges a sender by. The Received chain alone can run to tens of kilobytes, so only its
+// newest few lines are kept: they name the server that handed the email to Gmail.
 const KEEP = ["From", "To", "Reply-To", "Return-Path", "Subject", "Date", "Message-ID", "Authentication-Results", "Received-SPF"];
+const RECEIVED_KEPT = 3;
 const BODY_LIMIT = 30_000;
 
 /** A compact email: the judging headers plus the text and HTML bodies (with their links), never attachments. */
 export function toRawEmail(m: GmailMessage): string {
   const payload = m.payload ?? {};
-  const headers = (payload.headers ?? [])
-    .filter((h) => KEEP.some((k) => k.toLowerCase() === h.name.toLowerCase()))
+  const all = payload.headers ?? [];
+  const received = all.filter((h) => h.name.toLowerCase() === "received").slice(0, RECEIVED_KEPT);
+  const headers = all
+    .filter((h) => KEEP.some((k) => k.toLowerCase() === h.name.toLowerCase()) || received.includes(h))
     .map((h) => `${h.name}: ${h.value.replace(/\r?\n/g, " ").slice(0, 2000)}`);
   const plain: string[] = [];
   const html: string[] = [];
