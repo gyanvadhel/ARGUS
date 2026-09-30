@@ -1,6 +1,7 @@
 package app.askargus.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
@@ -10,8 +11,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.askargus.ui.theme.ArgusColors
+
+// Slimmer than Material's 24dp sides, so three buttons fit in a row on a small phone.
+private val ButtonPadding = PaddingValues(horizontal = 12.dp)
 
 @Composable
 fun ArgusButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, busy: Boolean = false) {
@@ -20,9 +25,10 @@ fun ArgusButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
         modifier = modifier.height(48.dp),
         enabled = enabled && !busy,
         colors = ButtonDefaults.buttonColors(containerColor = ArgusColors.Foreground, contentColor = ArgusColors.OnPrimary),
+        contentPadding = ButtonPadding,
     ) {
         if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = ArgusColors.OnPrimary, strokeWidth = 2.dp)
-        else Text(text)
+        else Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -34,5 +40,6 @@ fun ArgusOutlinedButton(text: String, onClick: () -> Unit, modifier: Modifier = 
         enabled = enabled,
         border = BorderStroke(1.dp, ArgusColors.Input),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = ArgusColors.Foreground),
-    ) { Text(text) }
+        contentPadding = ButtonPadding,
+    ) { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
 }

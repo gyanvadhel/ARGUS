@@ -1,12 +1,15 @@
 package app.askargus
 
 import android.content.Context
+import app.askargus.data.ActivityDao
+import app.askargus.data.ActivityDb
 import app.askargus.data.Prefs
 import app.askargus.net.Account
 import app.askargus.net.ArgusApi
 import app.askargus.net.EncryptedSessionStore
 import app.askargus.net.ObservableSessionStore
 import app.askargus.net.SupabaseAuth
+import app.askargus.read.ImageReader
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -22,4 +25,6 @@ class AppContainer(context: Context) {
     private val auth = SupabaseAuth(http, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY)
     val account = Account(auth, sessions, BuildConfig.APP_URL, onSignedOut = { prefs.setWebSignedInFor(null) })
     val api = ArgusApi(http, BuildConfig.APP_URL, auth, sessions)
+    val activity: ActivityDao by lazy { ActivityDb.get(context).dao() }
+    val reader = ImageReader(context.applicationContext)
 }

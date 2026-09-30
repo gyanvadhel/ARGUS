@@ -35,6 +35,7 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
         LivingEye(EyeMood.IDLE, Modifier.fillMaxWidth(0.6f))
         Text(session?.let { "Signed in as ${it.email}" } ?: "Signed out")
         if (session == null) ArgusButton("Sign in", onClick = { go(Routes.signIn(back = true)) })
+        ArgusButton("Check something", onClick = { go(Routes.SCAN) })
     }
 }
 
@@ -47,9 +48,7 @@ fun SettingsScreen(container: AppContainer, go: (String) -> Unit) {
     }
 }
 
-@Composable fun ScanScreen(container: AppContainer, go: (String) -> Unit, back: () -> Unit) = Placeholder("Scan")
 @Composable fun QrCameraScreen(container: AppContainer, back: () -> Unit) = Placeholder("Scan a QR code")
-@Composable fun ActivityScreen(container: AppContainer) = Placeholder("Activity")
 @Composable fun ArgusScreen(container: AppContainer) = Placeholder("Argus")
 @Composable fun FamilyScreen(container: AppContainer, go: (String) -> Unit, back: () -> Unit) = Placeholder("Family")
 @Composable fun JoinFamilyScreen(container: AppContainer, code: String, go: (String) -> Unit, back: () -> Unit) = Placeholder("Join a family")

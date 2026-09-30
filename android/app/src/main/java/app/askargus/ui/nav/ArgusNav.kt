@@ -24,14 +24,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.askargus.AppContainer
 import app.askargus.R
-import app.askargus.ui.ActivityScreen
+import app.askargus.ui.activity.ActivityScreen
 import app.askargus.ui.ArgusScreen
 import app.askargus.ui.FamilyScreen
 import app.askargus.ui.HomeScreen
 import app.askargus.ui.JoinFamilyScreen
 import app.askargus.ui.LicensesScreen
 import app.askargus.ui.QrCameraScreen
-import app.askargus.ui.ScanScreen
+import app.askargus.ui.scan.ScanScreen
 import app.askargus.ui.SettingsScreen
 import app.askargus.ui.auth.SignInScreen
 import app.askargus.ui.onboarding.WelcomeScreen
