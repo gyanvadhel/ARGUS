@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientIp, limitKey } from "./rate-limit";
+import { appLimitKey, clientIp, limitKey } from "./rate-limit";
 
 describe("clientIp", () => {
   it("takes the visitor's address from the first forwarded hop", () => {
@@ -19,5 +19,15 @@ describe("limitKey", () => {
     expect(key).toMatch(/^[0-9a-f]{64}$/);
     expect(limitKey("49.36.70.169", "secret-a")).toBe(key);
     expect(limitKey("49.36.70.169", "secret-b")).not.toBe(key);
+  });
+});
+
+describe("appLimitKey", () => {
+  it("counts per account and purpose without storing the account ID", () => {
+    const key = appLimitKey("scan", "5b0c0f8e-1111-2222-3333-444455556666", "secret-a");
+    expect(key).toMatch(/^[0-9a-f]{64}$/);
+    expect(key).not.toContain("5b0c0f8e");
+    expect(appLimitKey("handoff", "5b0c0f8e-1111-2222-3333-444455556666", "secret-a")).not.toBe(key);
+    expect(appLimitKey("scan", "another-user", "secret-a")).not.toBe(key);
   });
 });

@@ -11,3 +11,8 @@ export function clientIp(headers: Headers): string {
 export function limitKey(ip: string, secret: string): string {
   return createHmac("sha256", secret).update(`preview:${ip}`).digest("hex");
 }
+
+/** What an app user's checks are counted under: a keyed hash of what's counted and for whom, never the account ID. */
+export function appLimitKey(purpose: string, userId: string, secret: string): string {
+  return createHmac("sha256", secret).update(`app:${purpose}:${userId}`).digest("hex");
+}
