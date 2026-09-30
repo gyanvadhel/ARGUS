@@ -622,13 +622,17 @@ cd web; npm install; cd ..
 - **Remaining steps:**
   1. ~~Render Blueprint~~ (done). ~~Vercel `ARGUS_API_URL`~~ (done).
   2. ~~Vercel `ARGUS_API_TOKEN`~~ (done).
-  3. Google Cloud OAuth client: add `https://argus-watcher.vercel.app/api/gmail/callback` as a redirect URI.
-  4. ~~Supabase Auth URL configuration~~ (done 2026-09-30; verified in the auth logs): Site URL `https://argus-watcher.vercel.app`, and redirect URLs
-     `https://argus-watcher.vercel.app/**` and `http://localhost:3000/**`.
-     - For the demo, turn off "Confirm email": Supabase's built-in email sender only delivers to members of the
-       Supabase team.
-     - Optional: set the "Confirm signup" template link to
-       `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, so confirming works on any device.
+  3. ~~Google Cloud OAuth clients~~ (done): redirect URIs on askargus.app (and the old vercel.app ones, now unused).
+  4. ~~Supabase Auth URL configuration~~ (done 2026-09-30): Site URL `https://askargus.app`, redirect URLs
+     `https://askargus.app/**`, `https://argus-watcher.vercel.app/**` and `http://localhost:3000/**`.
+     - **Email sign-ups work for anyone since 2026-09-30:** Supabase uses **custom SMTP through Resend** (free:
+       100 emails/day, 3,000/month): sender `no-reply@askargus.app` ("Argus"), host `smtp.resend.com`, port 465,
+       user `resend`, password = a Resend API key (set by the user in Supabase only). DNS at Name.com has Resend's
+       records (`send` MX/TXT, `resend._domainkey` TXT) and `_dmarc` TXT `v=DMARC1; p=none;`. "Confirm email" is
+       on. A real sign-up was confirmed and signed in the same day.
+     - The "Confirm signup" template links to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
+       and "Reset password" to `…&type=recovery&next=/reset-password`, so links work on any device.
+     - Supabase allows about 30 auth emails an hour by default (Authentication → Rate Limits).
      - `APP_URL` on Vercel was fixed to the live address on 2026-09-26; it had been localhost.
   5. Optional: mark the Vercel secrets as "Sensitive". In the extension options, point to the Render URL and token.
   6. ~~Google sign-in~~ (live since 2026-09-30: separate Google project `306494429614`, published; enabled in Supabase; `NEXT_PUBLIC_GOOGLE_SIGNIN=1` on Vercel). How it was set up:
@@ -740,8 +744,8 @@ cd web; npm install; cd ..
   "Family alerts by SMS and WhatsApp", "Extension in the stores".
 - **Telegram:** family alerts are unit- and browser-tested without a bot. The live Telegram round trip (QR, then
   Start, then welcome, then alert) still needs a check with the real bot token and a phone.
-- **Signup emails:** Supabase's built-in sender only mails the project's team members, a few per hour. Public
-  signups need a custom SMTP service, or "Confirm email" turned off.
+- **Signup emails:** solved on 2026-09-30 with Resend (see §11). Its free plan sends 100 emails a day, so a
+  sudden wave of sign-ups would hit that limit.
 - **Machine learning:**
   - The text model's Indian coverage rests on ~90 hand-written examples, not a real Indian dataset.
   - Social-engineering pleas with no spammy wording ("stuck abroad, send money") can slip past it.
