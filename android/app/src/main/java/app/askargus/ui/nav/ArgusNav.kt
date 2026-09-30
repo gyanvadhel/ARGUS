@@ -29,15 +29,15 @@ import app.askargus.AppContainer
 import app.askargus.R
 import app.askargus.core.Incoming
 import app.askargus.ui.activity.ActivityScreen
-import app.askargus.ui.ArgusScreen
-import app.askargus.ui.FamilyScreen
+import app.askargus.ui.argus.ArgusScreen
+import app.askargus.ui.family.FamilyScreen
 import app.askargus.ui.HomeScreen
-import app.askargus.ui.JoinFamilyScreen
-import app.askargus.ui.LicensesScreen
+import app.askargus.ui.family.JoinFamilyScreen
+import app.askargus.ui.settings.LicensesScreen
 import app.askargus.ui.scan.QrCameraScreen
 import app.askargus.ui.scan.ScanScreen
 import app.askargus.ui.scan.scanViewModel
-import app.askargus.ui.SettingsScreen
+import app.askargus.ui.settings.SettingsScreen
 import app.askargus.ui.auth.SignInScreen
 import app.askargus.ui.onboarding.WelcomeScreen
 import app.askargus.ui.theme.ArgusColors
@@ -92,7 +92,7 @@ fun ArgusNav(container: AppContainer, onboarded: Boolean, incoming: StateFlow<In
                 scan.image(Uri.parse(item.uri))
                 nav.navigate(Routes.SCAN) { launchSingleTop = true }
             }
-            is Incoming.Join -> Unit // Task 14 opens the join screen
+            is Incoming.Join -> nav.navigate(Routes.join(item.code))
         }
         onIncomingHandled()
     }

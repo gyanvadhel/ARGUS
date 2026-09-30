@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.IntentCompat
-import app.askargus.core.HandoffPlan
 import app.askargus.core.Incoming
 import app.askargus.core.IncomingParser
 import app.askargus.ui.auth.GoogleSignIn
@@ -26,15 +25,18 @@ import app.askargus.ui.nav.ArgusNav
 import app.askargus.ui.theme.ArgusColors
 import app.askargus.ui.theme.ArgusTheme
 import app.askargus.ui.theme.argusEdgeToEdge
+import app.askargus.web.WebPages
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity(), Host {
     private val container get() = (application as ArgusApp).container
     private val incoming = MutableStateFlow<Incoming?>(null)
+    private lateinit var pages: WebPages
 
     override fun onCreate(savedInstanceState: Bundle?) {
         argusEdgeToEdge()
         super.onCreate(savedInstanceState)
+        pages = WebPages(this, container)
         if (savedInstanceState == null) handle(intent)
         setContent {
             val touch = remember { TouchState() }
@@ -67,8 +69,12 @@ class MainActivity : ComponentActivity(), Host {
         ) ?: incoming.value
     }
 
-    // Task 14 replaces this with signed-in website pages (handoff + Trusted Web Activity).
-    override fun openPage(path: String, force: Boolean) = openUrl(HandoffPlan.plainUrl(BuildConfig.APP_URL, path))
+    override fun openPage(path: String, force: Boolean) = pages.open(path, force)
+
+    override fun onDestroy() {
+        pages.destroy()
+        super.onDestroy()
+    }
 
     override fun openUrl(url: String) {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))

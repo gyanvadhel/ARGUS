@@ -10,7 +10,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.askargus.AppContainer
@@ -18,7 +17,6 @@ import app.askargus.ui.components.ArgusButton
 import app.askargus.ui.components.EyeMood
 import app.askargus.ui.components.LivingEye
 import app.askargus.ui.nav.Routes
-import kotlinx.coroutines.launch
 
 @Composable
 private fun Placeholder(title: String, content: @Composable () -> Unit = {}) {
@@ -38,17 +36,3 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
         ArgusButton("Check something", onClick = { go(Routes.SCAN) })
     }
 }
-
-@Composable
-fun SettingsScreen(container: AppContainer, go: (String) -> Unit) {
-    val scope = rememberCoroutineScope()
-    val session by container.account.session.collectAsState()
-    Placeholder("Settings") {
-        if (session != null) ArgusButton("Sign out", onClick = { scope.launch { container.account.signOut() } })
-    }
-}
-
-@Composable fun ArgusScreen(container: AppContainer) = Placeholder("Argus")
-@Composable fun FamilyScreen(container: AppContainer, go: (String) -> Unit, back: () -> Unit) = Placeholder("Family")
-@Composable fun JoinFamilyScreen(container: AppContainer, code: String, go: (String) -> Unit, back: () -> Unit) = Placeholder("Join a family")
-@Composable fun LicensesScreen(back: () -> Unit) = Placeholder("Licences")
