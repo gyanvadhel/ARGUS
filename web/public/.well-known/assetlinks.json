@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.askargus",
+      "sha256_cert_fingerprints": ["28:4C:6F:91:EB:76:10:E9:6F:D3:67:60:D8:BD:D2:09:FC:C4:DB:5B:2A:B9:F2:A7:98:96:A5:7F:16:2E:61:C2"]
+    }
+  }
+]
