@@ -518,9 +518,9 @@ files). **RLS is on for every table**; policies use `(select auth.uid()) = user_
 | Name | Purpose |
 |---|---|
 | `VIRUSTOTAL_API_KEY` | optional: 70+ antivirus engines for links and files (free tier: 4 lookups/min) |
-| `GOOGLE_SAFE_BROWSING_KEY`, `ABUSECH_AUTH_KEY` | optional: Google's phishing/malware list; URLhaus API + MalwareBazaar (not set yet on 2026-09-30) |
-| `OTX_API_KEY` | optional: AlienVault OTX threat reports for links and files (free account; not set yet on 2026-09-30) |
-| `ABUSEIPDB_API_KEY` | optional: abuse reports on the server that sent an email (free, 1,000/day; not set yet on 2026-09-30) |
+| `GOOGLE_SAFE_BROWSING_KEY`, `ABUSECH_AUTH_KEY` | optional: Google's phishing/malware list; URLhaus API + MalwareBazaar (set locally and on Render 2026-09-30) |
+| `OTX_API_KEY` | optional: AlienVault OTX threat reports for links and files (free account; **not set yet**: the signup's country list wouldn't load) |
+| `ABUSEIPDB_API_KEY` | optional: abuse reports on the server that sent an email (free, 1,000/day; set locally and on Render 2026-09-30) |
 | `ARGUS_DEFAULT_REGION` | `IN` (the region for numbers typed without a country code) |
 | `ARGUS_API_TOKEN` | set only when hosted; then every endpoint except /health requires it |
 | `ARGUS_OFFLINE` | `1` disables all live network checks (used by tests) |
@@ -592,6 +592,9 @@ cd web; npm install; cd ..
   - `/health` is OK with feeds loaded. `/scan` correctly demands the token.
   - VirusTotal is on there (the user added `VIRUSTOTAL_API_KEY` on Render). IPQS is on too (`IPQS_API_KEY`,
     added 2026-09-30); a live lookup of the known robocaller returned "reported for spam, risk 100/100".
+  - Google Safe Browsing, abuse.ch (URLhaus API + MalwareBazaar) and AbuseIPDB were added on 2026-09-30 and
+    verified live the same day (`.superpowers/e2e/prod-keys-check.mjs`): each answered a real scan. OTX is the
+    only optional key still missing. crt.sh was returning 502 for every query that day (its outage, not ours).
   - `argus-api.onrender.com` (no suffix) is **someone else's** Node app ("Argus backend is live"); Render names are
     first come, first served.
   - The engine auto-deploys from GitHub `main`. The ML models were confirmed live there on 2026-09-26
@@ -771,5 +774,5 @@ cd web; npm install; cd ..
 3. Test the Telegram flow end to end with the real bot token and a phone.
 4. Before the demo: open the site a couple of minutes early to wake Render. Clean test data with the SQL above.
 5. Optional: Supabase leaked-password protection, and marking Vercel secrets as Sensitive.
-6. Add the four free engine keys on Render → Environment (and in `api/.env` locally): `GOOGLE_SAFE_BROWSING_KEY`,
-   `ABUSECH_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`. Until then those sources show "not configured".
+6. Add `OTX_API_KEY` on Render → Environment (and in `api/.env` locally) once the OTX signup works. The other
+   three free keys are live.
