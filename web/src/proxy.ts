@@ -1,10 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { APP_URL, canonicalRedirect } from "@/lib/app-url";
 import { loginNext } from "@/lib/safe-next";
 
 const APP_ROUTES = ["/dashboard", "/scan", "/history", "/caller-id", "/inbox", "/family", "/reset-password"];
 
 export async function proxy(request: NextRequest) {
+  // The old argus-watcher.vercel.app address forwards to the same page on askargus.app.
+  const moved = canonicalRedirect(request.nextUrl, APP_URL, process.env.VERCEL_ENV);
+  if (moved) return NextResponse.redirect(moved, 308);
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

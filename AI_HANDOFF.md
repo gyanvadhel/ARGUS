@@ -20,8 +20,9 @@ variable names are listed, values are not.
   - `extension/`: Chrome/Edge extension, Manifest V3.
 - **Repo:** https://github.com/gyanvadhel/ARGUS (public), branch `main`. The original Streamlit prototype lives in
   `ARGUS-main/`, kept for reference only.
-- **Live site:** https://argus-watcher.vercel.app (Vercel), with the engine on Render at
-  https://argus-api-xsea.onrender.com. **Working end to end** (verified 2026-09-26, both ML models live).
+- **Live site:** **https://askargus.app** (own domain since 2026-09-30, on Vercel; the old
+  https://argus-watcher.vercel.app forwards there), with the engine on Render at https://argus-api-xsea.onrender.com.
+  **Working end to end** (verified 2026-09-26, both ML models live).
 - **Core rule from the user: never fake anything.** Unfinished features are shown as "Coming soon". "Safe" is only
   shown when positive evidence verifies it; otherwise the verdict is "No red flags".
 
@@ -575,7 +576,17 @@ cd web; npm install; cd ..
 - **Vercel (website):**
   - Team slug `gyanvadhels-projects`, project **argus** (`prj_j1FcglpTGNskR90khJKmspsZ0Kf7`).
   - **Root Directory `web`, framework Next.js**, functions in `bom1`.
-  - Domains: **argus-watcher.vercel.app** (primary) and argus-pi-opal.vercel.app.
+  - Domains: **askargus.app** (primary, since 2026-09-30) and www.askargus.app (Vercel forwards it, 308). The old
+    argus-watcher.vercel.app and argus-pi-opal.vercel.app forward to the same page on askargus.app through
+    `canonicalRedirect()` in `lib/app-url.ts`, called first in `proxy.ts` (production only; previews keep their own
+    address).
+  - **Domain:** registered at **Name.com** (free first year through the GitHub Student Pack; check the renewal price
+    before 2027-09-30). DNS at Name.com: `A @ 76.76.21.21` and `CNAME www cname.vercel-dns.com`. `.app` is HTTPS-only.
+  - Moving to the domain needed, besides DNS: `APP_URL=https://askargus.app` on Vercel; Supabase Site URL and a
+    `https://askargus.app/**` redirect URL; `https://askargus.app` as a JavaScript origin and the matching redirect URI
+    in **both** Google clients (`/api/gmail/callback` in the Gmail project, `/api/auth/google/callback` in the
+    separate sign-in project `306494429614`); `askargus.app` under Authorized domains on both Branding pages.
+    `.superpowers/tmp/redirect-check.mjs` asks Google whether each redirect URI is accepted, without signing in.
   - Env vars set (checked 2026-09-26, names only):
     - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
     - `ARGUS_API_URL`: set on 2026-09-26 to **https://argus-api-xsea.onrender.com** (production + preview). A new
@@ -769,7 +780,7 @@ cd web; npm install; cd ..
 ## 17. Next steps (suggested order)
 
 1. ~~Token, push, deploy~~ (done 2026-09-26). Re-verify any time with
-   `.superpowers/e2e/prod-check.mjs https://argus-watcher.vercel.app`.
+   `.superpowers/e2e/prod-check.mjs https://askargus.app`.
 2. Add the production Gmail redirect URI in Google Cloud and the Site URL in Supabase.
 3. Test the Telegram flow end to end with the real bot token and a phone.
 4. Before the demo: open the site a couple of minutes early to wake Render. Clean test data with the SQL above.
