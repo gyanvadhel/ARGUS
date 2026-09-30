@@ -31,7 +31,7 @@ import app.askargus.core.Incoming
 import app.askargus.ui.activity.ActivityScreen
 import app.askargus.ui.argus.ArgusScreen
 import app.askargus.ui.family.FamilyScreen
-import app.askargus.ui.HomeScreen
+import app.askargus.ui.home.HomeScreen
 import app.askargus.ui.family.JoinFamilyScreen
 import app.askargus.ui.settings.LicensesScreen
 import app.askargus.ui.scan.QrCameraScreen
