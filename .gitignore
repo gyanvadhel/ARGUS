@@ -18,6 +18,7 @@ venv/
 # android / gradle leftovers
 .gradle/
 build/
+*.apk
 
 # claude local settings
 .claude/settings.local.json
