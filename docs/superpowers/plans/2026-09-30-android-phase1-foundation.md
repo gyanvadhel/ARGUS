@@ -80,7 +80,7 @@
 
 **Files:** none in the repo (tools go to `%USERPROFILE%\.argus-tools\`).
 
-- [ ] **Step 1: Download and unpack JDK 17 (Temurin)**
+- [x] **Step 1: Download and unpack JDK 17 (Temurin)**
 
 Run (PowerShell):
 ```powershell
@@ -94,7 +94,7 @@ Remove-Item "$tools\jdk17.zip", "$tools\jdk-tmp" -Recurse -Force
 ```
 Expected: `openjdk version "17.0.` …
 
-- [ ] **Step 2: Download the Android command-line tools**
+- [x] **Step 2: Download the Android command-line tools**
 
 ```powershell
 $ProgressPreference = 'SilentlyContinue'
@@ -110,7 +110,7 @@ Remove-Item "$tools\cmdline.zip", "$tools\cmdline-tmp" -Recurse -Force
 ```
 Expected: a `https://dl.google.com/android/repository/commandlinetools-win-…_latest.zip` URL is printed and `$tools\android-sdk\cmdline-tools\latest\bin\sdkmanager.bat` exists.
 
-- [ ] **Step 3: Install the SDK packages and accept licences**
+- [x] **Step 3: Install the SDK packages and accept licences**
 
 ```powershell
 $env:JAVA_HOME = "$env:USERPROFILE\.argus-tools\jdk-17"
@@ -122,7 +122,7 @@ $sdk = "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat"
 ```
 Expected: the list shows `build-tools;35.0.0`, `platform-tools`, `platforms;android-35`.
 
-- [ ] **Step 4: Download Gradle 8.11.1 (only used once, to create the wrapper)**
+- [x] **Step 4: Download Gradle 8.11.1 (only used once, to create the wrapper)**
 
 ```powershell
 $ProgressPreference = 'SilentlyContinue'
@@ -149,7 +149,7 @@ No commit (nothing in the repo changed).
 **Interfaces:**
 - Produces: `Risk` enum `{SAFE, CLEAR, LOW, SUSPICIOUS, HIGH, UNKNOWN}`; `data class LevelInfo(label: String, risk: Risk)`; `Levels.meta(level: String, verified: Boolean): LevelInfo`; `Levels.levelFor(score: Int): String`; `Kinds.label(kind: String): String`; BuildConfig fields `APP_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `GOOGLE_WEB_CLIENT_ID`; the release key's SHA-1 and SHA-256 fingerprints (used by Tasks 8 and 17).
 
-- [ ] **Step 1: Create the Gradle settings and generate the wrapper**
+- [x] **Step 1: Create the Gradle settings and generate the wrapper**
 
 `android/.gitignore`:
 ```
@@ -193,7 +193,7 @@ Get-ChildItem gradlew*, gradle\wrapper
 Expected: `gradlew`, `gradlew.bat`, `gradle\wrapper\gradle-wrapper.jar` and `gradle-wrapper.properties` exist. Then add
 `include(":app")` back as the last line of `settings.gradle.kts` with the Edit tool.
 
-- [ ] **Step 2: Add the build files**
+- [x] **Step 2: Add the build files**
 
 `android/build.gradle.kts`:
 ```kotlin
@@ -458,7 +458,7 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-- [ ] **Step 3: Write the failing test for the level words**
+- [x] **Step 3: Write the failing test for the level words**
 
 `android/app/src/test/java/app/askargus/core/LevelsTest.kt`:
 ```kotlin
@@ -499,7 +499,7 @@ class LevelsTest {
 }
 ```
 
-- [ ] **Step 4: Run it to see it fail**
+- [x] **Step 4: Run it to see it fail**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
@@ -507,7 +507,7 @@ Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
 ```
 Expected: compilation FAILS with `Unresolved reference: Levels` (the first run also downloads Gradle, AGP and the libraries; allow several minutes).
 
-- [ ] **Step 5: Implement the level words**
+- [x] **Step 5: Implement the level words**
 
 `android/app/src/main/java/app/askargus/core/Levels.kt`:
 ```kotlin
@@ -549,14 +549,14 @@ object Kinds {
 }
 ```
 
-- [ ] **Step 6: Run the test to see it pass, and build a debug APK**
+- [x] **Step 6: Run the test to see it pass, and build a debug APK**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest --tests "app.askargus.core.LevelsTest" :app:assembleDebug
 ```
 Expected: `BUILD SUCCESSFUL`; `app\build\outputs\apk\debug\app-debug.apk` exists.
 
-- [ ] **Step 7: Create the release signing key (outside the repo, never overwritten)**
+- [x] **Step 7: Create the release signing key (outside the repo, never overwritten)**
 
 ```powershell
 $dir = "$env:USERPROFILE\.argus"; New-Item -ItemType Directory -Force $dir | Out-Null
@@ -579,7 +579,7 @@ $pw = ((Get-Content "$dir\keystore.properties") -match '^storePassword=' -replac
 ```
 Expected: `SHA1: …` and `SHA256: …` fingerprints printed (public; record both in the ledger — Task 8 needs SHA-256, Task 17 needs SHA-1). The password is never printed.
 
-- [ ] **Step 8: Build a signed release APK**
+- [x] **Step 8: Build a signed release APK**
 
 ```powershell
 .\gradlew.bat :app:assembleRelease
@@ -587,7 +587,7 @@ Expected: `SHA1: …` and `SHA256: …` fingerprints printed (public; record bot
 ```
 Expected: `BUILD SUCCESSFUL`, and the printed certificate SHA-256 digest equals Step 7's SHA256 (apksigner prints it lowercase without colons).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 PowerShell's `Set-Content` wrote `config.properties` with CRLF endings; the repo uses LF for new files (only
 `gradlew.bat` keeps CRLF, as Windows batch files need):
@@ -627,7 +627,7 @@ All of this is plain Kotlin with no Android classes, so it runs as JVM unit test
   - `HandoffPlan.needsHandoff(userId: String?, webSignedInFor: String?, force: Boolean = false): Boolean`, `HandoffPlan.plainUrl(appUrl: String, path: String): String`
   - `UpdateDecision.Outcome(available: String?, notify: Boolean)`, `UpdateDecision.decide(latest: String?, current: String, notified: String?): Outcome`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `QrTest.kt` (the same cases as `web/src/lib/qr.test.ts`):
 ```kotlin
@@ -854,7 +854,7 @@ class DecisionsTest {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
@@ -862,7 +862,7 @@ Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
 ```
 Expected: compilation FAILS with unresolved references (`Qr`, `Links`, `Versions`, …).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `Qr.kt`:
 ```kotlin
@@ -1179,14 +1179,14 @@ object UpdateDecision {
 }
 ```
 
-- [ ] **Step 4: Run the tests to see them pass**
+- [x] **Step 4: Run the tests to see them pass**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
 ```
 Expected: `BUILD SUCCESSFUL`, all tests in `LevelsTest`, `QrTest`, `TextHelpersTest`, `VerdictTest`, `DecisionsTest` pass. If `formatsRupees` fails only because the JVM prints a different rupee layout, check the actual string; the phone (ICU) prints `₹4,999.00`; ledger a ruling if you adjust the JVM expectation.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/app/src/main/java/app/askargus/core android/app/src/test/java/app/askargus/core
@@ -1218,7 +1218,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
   - `class ArgusApi(http, appUrl, auth, sessions: SessionStore, now = …) : Checker` with `scan`, `handoff(next): String`, `familyInvite()`, `familyJoin(code)`, `family()`, `leaveFamily(linkId)`, `inviteInfo(code)`, `latest(): LatestRelease?`
 - Server contract (built in Tasks 5–8): JSON bodies; errors are `{"error": "<message>"}` with 400/401/429/5xx; `401` means the access token is no longer valid.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `SupabaseAuthTest.kt`:
 ```kotlin
@@ -1456,14 +1456,14 @@ class AccountTest {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest --tests "app.askargus.net.*"
 ```
 Expected: compilation FAILS (unresolved `SupabaseAuth`, `ArgusApi`, `Session`, …).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `ArgusJson.kt`:
 ```kotlin
@@ -1833,14 +1833,14 @@ class ArgusApi(
 }
 ```
 
-- [ ] **Step 4: Run the tests to see them pass**
+- [x] **Step 4: Run the tests to see them pass**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
 ```
 Expected: `BUILD SUCCESSFUL`; all `net` and `core` tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add android/app/src/main/java/app/askargus/net android/app/src/test/java/app/askargus/net
@@ -1868,7 +1868,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
   - `performScan(supabase, what: { input } | { file }, mode = "always"): Promise<{ ok: true; id: string | null; verdict; alerted } | { ok: false; error }>`
   - `POST /api/app/scan` body `{ input, save? }` → `200 { id, verdict, alerted }` | `400/401/429/502 { error }`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `web/src/lib/app-auth.test.ts`:
 ```ts
@@ -1931,12 +1931,12 @@ describe("appLimitKey", () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cd web && npx vitest run src/lib/app-auth.test.ts src/lib/app-scan.test.ts src/lib/rate-limit.test.ts`
 Expected: FAIL — `Cannot find module './app-auth'`, `'./app-scan'`, and `appLimitKey is not a function`.
 
-- [ ] **Step 3: Implement the helpers**
+- [x] **Step 3: Implement the helpers**
 
 `web/src/lib/app-auth.ts`:
 ```ts
@@ -2109,7 +2109,7 @@ export async function performScan(supabase: Supabase, what: ScanWhat, mode: Save
 }
 ```
 
-- [ ] **Step 4: Use the shared pipeline in the Scan page's action**
+- [x] **Step 4: Use the shared pipeline in the Scan page's action**
 
 In `web/src/app/(app)/scan/actions.ts`, replace everything from the imports down to the end of `runScan` with:
 ```ts
@@ -2141,7 +2141,7 @@ export async function runScan(formData: FormData): Promise<ScanResult> {
 ```
 Keep `ReportResult`, `CATEGORIES` and `reportNumber` below it unchanged.
 
-- [ ] **Step 5: Add the endpoint**
+- [x] **Step 5: Add the endpoint**
 
 `web/src/app/api/app/scan/route.ts`:
 ```ts
@@ -2165,12 +2165,12 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 6: Run the unit tests, typecheck and lint**
+- [x] **Step 6: Run the unit tests, typecheck and lint**
 
 Run: `cd web && npx vitest run && npx tsc --noEmit -p . && npx eslint src`
 Expected: all tests pass (the earlier 124 plus the new ones); no type or lint errors.
 
-- [ ] **Step 7: Check the endpoint end to end against the local engine**
+- [x] **Step 7: Check the endpoint end to end against the local engine**
 
 Start the engine and website (background): `cd api && .venv/Scripts/python -m uvicorn argus_api.main:app --port 8000` and `cd web && npm run dev`.
 
@@ -2215,7 +2215,7 @@ delete from public.scans where user_id = (select id from auth.users where email 
 ```
 (run through the Supabase MCP `execute_sql`, project `yvcxqwrgizfmzgohnezj`).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add web/src/lib/app-auth.ts web/src/lib/app-auth.test.ts web/src/lib/app-caps.ts web/src/lib/app-scan.ts web/src/lib/app-scan.test.ts web/src/lib/scan-core.ts web/src/lib/rate-limit.ts web/src/lib/rate-limit.test.ts "web/src/app/(app)/scan/actions.ts" web/src/app/api/app/scan/route.ts
@@ -2237,7 +2237,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: `appUser`, `fail`, `unauthorized`, `withinCap`, `CAP_MESSAGES` (Task 5); `safeNext` (existing); `APP_URL` (existing); `/auth/confirm` already verifies `token_hash` + `type=magiclink`.
 - Produces: `handoffUrl(appUrl, tokenHash, next): string`; `POST /api/app/handoff` body `{ next }` → `200 { url }` | `401` | `429` | `503` (secret key not set) | `502`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `web/src/lib/handoff.test.ts`:
 ```ts
@@ -2259,12 +2259,12 @@ describe("handoffUrl", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `cd web && npx vitest run src/lib/handoff.test.ts`
 Expected: FAIL — `Cannot find module './handoff'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `web/src/lib/handoff.ts`:
 ```ts
@@ -2310,12 +2310,12 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 4: Run the tests, typecheck and lint**
+- [x] **Step 4: Run the tests, typecheck and lint**
 
 Run: `cd web && npx vitest run && npx tsc --noEmit -p . && npx eslint src`
 Expected: all pass.
 
-- [ ] **Step 5: Check the endpoint (locally the secret key isn't set, so it must say so)**
+- [x] **Step 5: Check the endpoint (locally the secret key isn't set, so it must say so)**
 
 Append to `.superpowers/e2e/app-api-check.mjs`:
 ```js
@@ -2329,7 +2329,7 @@ ok("handoff needs a token", r.status === 401);
 Run: `node .superpowers/e2e/app-api-check.mjs`
 Expected: all PASS (locally the 503 branch).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add web/src/lib/handoff.ts web/src/lib/handoff.test.ts web/src/app/api/app/handoff/route.ts
@@ -2355,7 +2355,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
   - `GET /api/app/family` → `{ members: [{ linkId, name, joinedAt }] }`; `POST /api/app/family/invite` → `{ url, expiresAt }`; `POST /api/app/family/join` `{ code }` → `{ name }`; `GET /api/app/family/invite-info?code=` → `{ name, valid }` (public); `DELETE /api/app/family/<linkId>` → `{ left: true }`
   - Page `/app/join/<code>`
 
-- [ ] **Step 1: Write the migration**
+- [x] **Step 1: Write the migration**
 
 `supabase/migrations/20260930120000_family_links.sql`:
 ```sql
@@ -2466,7 +2466,7 @@ revoke all on function public.my_family() from public;
 grant execute on function public.my_family() to authenticated;
 ```
 
-- [ ] **Step 2: Check `pgcrypto` lives in the `extensions` schema, then apply the migration**
+- [x] **Step 2: Check `pgcrypto` lives in the `extensions` schema, then apply the migration**
 
 Supabase MCP `execute_sql` (project `yvcxqwrgizfmzgohnezj`):
 ```sql
@@ -2477,7 +2477,7 @@ Expected: one row, schema `extensions`. (If missing: `create extension if not ex
 Then MCP `apply_migration` with name `family_links` and the file's SQL.
 Expected: success.
 
-- [ ] **Step 3: Run the SQL checks (each is one `execute_sql` call, rolled back)**
+- [x] **Step 3: Run the SQL checks (each is one `execute_sql` call, rolled back)**
 
 Common preamble for every check (two throwaway users):
 ```sql
@@ -2562,7 +2562,7 @@ select count(*) from auth.users where email like '%.plan@test.invalid';
 ```
 Expected: `0`.
 
-- [ ] **Step 4: Write the failing unit test**
+- [x] **Step 4: Write the failing unit test**
 
 `web/src/lib/family-invite.test.ts`:
 ```ts
@@ -2593,7 +2593,7 @@ describe("invite codes", () => {
 Run: `cd web && npx vitest run src/lib/family-invite.test.ts`
 Expected: FAIL — `Cannot find module './family-invite'`.
 
-- [ ] **Step 5: Implement the helpers**
+- [x] **Step 5: Implement the helpers**
 
 `web/src/lib/family-invite.ts`:
 ```ts
@@ -2640,7 +2640,7 @@ export async function inviteInfo(code: string): Promise<{ name: string | null; v
 
 Run: `cd web && npx vitest run src/lib/family-invite.test.ts` → Expected: PASS.
 
-- [ ] **Step 6: Add the endpoints**
+- [x] **Step 6: Add the endpoints**
 
 `web/src/app/api/app/family/route.ts`:
 ```ts
@@ -2724,7 +2724,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 }
 ```
 
-- [ ] **Step 7: Add the join page**
+- [x] **Step 7: Add the join page**
 
 `web/src/app/app/join/[code]/actions.ts`:
 ```ts
@@ -2832,7 +2832,7 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
 }
 ```
 
-- [ ] **Step 8: Run tests, typecheck and lint; check the endpoints end to end**
+- [x] **Step 8: Run tests, typecheck and lint; check the endpoints end to end**
 
 Run: `cd web && npx vitest run && npx tsc --noEmit -p . && npx eslint src` → Expected: all pass.
 
@@ -2861,7 +2861,7 @@ Run: `node .superpowers/e2e/app-api-check.mjs` → Expected: all PASS. Then remo
 delete from public.family_invites where inviter_id = (select id from auth.users where email = 'argus.demo.tester@gmail.com');
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add supabase/migrations/20260930120000_family_links.sql web/src/lib/family-invite.ts web/src/lib/family-invite.test.ts web/src/lib/family-invite-info.ts web/src/app/api/app/family web/src/app/app/join
@@ -2883,7 +2883,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: the release key's SHA-256 fingerprint (Task 2, Step 7).
 - Produces: `pickAndroidRelease(releases: GithubRelease[]): AndroidRelease | null`; `latestAndroidRelease(): Promise<AndroidRelease | null>`; `type AndroidRelease = { version; apk; smsHelperApk: string | null; notes; publishedAt }`; `GET /api/app/latest` → `200 AndroidRelease` | `404 { error }` | `502 { error }`; page `/app`; `/.well-known/assetlinks.json`. Releases are tagged `android-v<version>` with assets `argus-<version>.apk` (and later `argus-sms-helper-<version>.apk`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `web/src/lib/app-release.test.ts`:
 ```ts
@@ -2927,7 +2927,7 @@ describe("pickAndroidRelease", () => {
 ```
 Run: `cd web && npx vitest run src/lib/app-release.test.ts` → Expected: FAIL (`Cannot find module './app-release'`).
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `web/src/lib/app-release.ts`:
 ```ts
@@ -2996,7 +2996,7 @@ export async function GET() {
 }
 ```
 
-- [ ] **Step 3: Add the download page**
+- [x] **Step 3: Add the download page**
 
 `web/src/app/app/page.tsx`:
 ```tsx
@@ -3087,7 +3087,7 @@ export default async function AppPage() {
 }
 ```
 
-- [ ] **Step 4: Add Digital Asset Links and skip the proxy for it**
+- [x] **Step 4: Add Digital Asset Links and skip the proxy for it**
 
 `web/public/.well-known/assetlinks.json` (replace the fingerprint with Task 2 Step 7's `SHA256:` value exactly as keytool printed it: uppercase, colon-separated):
 ```json
@@ -3112,7 +3112,7 @@ to:
   matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 ```
 
-- [ ] **Step 5: Test, typecheck, lint, and check locally**
+- [x] **Step 5: Test, typecheck, lint, and check locally**
 
 Run: `cd web && npx vitest run && npx tsc --noEmit -p . && npx eslint src`
 Expected: all pass.
@@ -3125,7 +3125,7 @@ curl -s http://localhost:3000/app | grep -o "Argus for Android" | head -1
 ```
 Expected: `200 application/json`; `{"error":"No Android release yet."} 404` (before the first release); `Argus for Android`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add web/src/lib/app-release.ts web/src/lib/app-release.test.ts web/src/app/api/app/latest/route.ts web/src/app/app/page.tsx web/public/.well-known/assetlinks.json web/src/proxy.ts
@@ -3134,7 +3134,7 @@ git commit -m "feat(web): Android download page, latest-release endpoint, asset 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 7: Deploy the website pieces (needs the user's go-ahead) and check them live**
+- [x] **Step 7: Deploy the website pieces (needs the user's go-ahead) and check them live**
 
 The Android tasks talk to the live askargus.app, so the website half ships first; nothing on the site changes for existing visitors. Ask the user: "The website side of the app (new API endpoints, the family invite tables, the /app page) is ready and tested. May I push it? Also, when you have a minute: Supabase → Project Settings → API Keys → create a **secret key** and add it to Vercel as `SUPABASE_SECRET_KEY` (Sensitive, Production + Preview). It lets the app open website pages already signed in. Don't paste it here."
 
@@ -3157,7 +3157,7 @@ Expected: all PASS (the handoff line takes the 200 branch once the user has adde
 **Interfaces:**
 - Produces: a running emulator reachable by `adb`; `adbui.py` functions `adb(*args)`, `find(text)`, `wait_for(text, timeout=30)`, `tap(text, timeout=30)`, `type_text(text)`, `screenshot(name) -> path`, `back()`, `start_app()`, `install(apk)`.
 
-- [ ] **Step 1: Install the emulator packages**
+- [x] **Step 1: Install the emulator packages**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
@@ -3166,7 +3166,7 @@ $sdk = "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat"
 ```
 Expected: the three packages appear in `& $sdk --list_installed` (about 2 GB downloaded).
 
-- [ ] **Step 2: Install the emulator's hypervisor driver (one admin prompt)**
+- [x] **Step 2: Install the emulator's hypervisor driver (one admin prompt)**
 
 Tell the user first: "Windows will ask for permission to install Android's emulator driver; please click Yes." Then:
 ```powershell
@@ -3175,7 +3175,7 @@ sc.exe query aehd
 ```
 Expected: `STATE : 4 RUNNING`. If it fails (e.g. another hypervisor holds the CPU's virtualisation), stop the emulator path: ask the user to connect their phone over USB (Settings → About phone → tap Build number 7 times → Developer options → USB debugging on → plug in → allow the PC) and use `adb devices` to confirm it shows as `device`. Everything below works the same on a phone.
 
-- [ ] **Step 3: Create and boot the virtual phone**
+- [x] **Step 3: Create and boot the virtual phone**
 
 ```powershell
 "no" | & "$env:ANDROID_HOME\cmdline-tools\latest\bin\avdmanager.bat" create avd -n argus35 -k "system-images;android-35;google_apis_playstore;x86_64" -d pixel_6 --force
@@ -3187,7 +3187,7 @@ do { Start-Sleep 5; $booted = (& $adb shell getprop sys.boot_completed).Trim() }
 ```
 Expected: `booted` (first boot can take a few minutes).
 
-- [ ] **Step 4: Write the adb driver**
+- [x] **Step 4: Write the adb driver**
 
 `.superpowers/e2e/adbui.py`:
 ```python
@@ -3271,7 +3271,7 @@ def start_app(clear=False):
     time.sleep(2)
 ```
 
-- [ ] **Step 5: Smoke-test the driver with the skeleton APK**
+- [x] **Step 5: Smoke-test the driver with the skeleton APK**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main"
@@ -3294,7 +3294,7 @@ No commit (only git-ignored files).
 - Consumes: `Risk`, `Gaze` (Tasks 2–3).
 - Produces: `ArgusColors` (all tokens + `risk(r: Risk): Color`), `ArgusTypography`, `@Composable ArgusTheme(content)`; `class TouchState`, `LocalTouch`, `Modifier.trackTouches(state)`; `enum class EyeMood { IDLE, WATCHING, SCANNING, SAFE, DANGER }`, `@Composable LivingEye(mood, modifier)`; `@Composable ScoreDial(score: Int, color: Color, modifier)`; `@Composable LevelPill(label, color)`, `@Composable SoonPill()`; `@Composable ArgusCard(modifier, onClick: (() -> Unit)? = null, content: ColumnScope.() -> Unit)`; `@Composable ArgusButton(text, onClick, modifier, enabled = true, busy = false)`, `@Composable ArgusOutlinedButton(text, onClick, modifier, enabled = true)`; drawables `R.drawable.ic_notification` (white eye), `R.mipmap.ic_launcher`.
 
-- [ ] **Step 1: Download the Archivo font and its licence**
+- [x] **Step 1: Download the Archivo font and its licence**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android\app\src\main"
@@ -3306,7 +3306,7 @@ Invoke-WebRequest "https://github.com/google/fonts/raw/main/ofl/archivo/OFL.txt"
 ```
 Expected: a size well over 100000 bytes and a line mentioning the SIL Open Font License. (If the URL 404s, open `https://github.com/google/fonts/tree/main/ofl/archivo` to find the current variable-font file name.)
 
-- [ ] **Step 2: Add colours, theme and icons**
+- [x] **Step 2: Add colours, theme and icons**
 
 `res/values/colors.xml`:
 ```xml
@@ -3383,7 +3383,7 @@ In `AndroidManifest.xml`, change the `<application …>` opening tag to:
         android:theme="@style/Theme.Argus">
 ```
 
-- [ ] **Step 3: Add the theme code**
+- [x] **Step 3: Add the theme code**
 
 `ui/theme/Color.kt`:
 ```kotlin
@@ -3492,7 +3492,7 @@ fun ArgusTheme(content: @Composable () -> Unit) {
 }
 ```
 
-- [ ] **Step 4: Add the components**
+- [x] **Step 4: Add the components**
 
 `ui/components/Touch.kt`:
 ```kotlin
@@ -3800,7 +3800,7 @@ fun ArgusOutlinedButton(text: String, onClick: () -> Unit, modifier: Modifier = 
 }
 ```
 
-- [ ] **Step 5: Show the components in a temporary gallery (replaced in Task 11)**
+- [x] **Step 5: Show the components in a temporary gallery (replaced in Task 11)**
 
 `MainActivity.kt`:
 ```kotlin
@@ -3871,7 +3871,7 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-- [ ] **Step 6: Build, install, and look at it**
+- [x] **Step 6: Build, install, and look at it**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
@@ -3881,7 +3881,7 @@ api\.venv\Scripts\python -c "import sys; sys.path.insert(0, '.superpowers/e2e');
 ```
 Expected: tests pass, build succeeds, and `gallery.png` shows the eye (violet-to-coral iris inside a bone-coloured almond), "Argus" in condensed Archivo, a red dial filling to 96, three pills, a card and two pill buttons on near-black. Check the launcher icon too: `u.adb("shell","input","keyevent","3")` (Home), then screenshot — the Argus eye icon on a black tile. Fix anything that looks wrong before continuing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add android/app/src/main/res android/app/src/main/assets android/app/src/main/AndroidManifest.xml android/app/src/main/java/app/askargus/ui android/app/src/main/java/app/askargus/MainActivity.kt
@@ -3913,7 +3913,7 @@ Screens built in later tasks start as tiny placeholders in `ui/Stubs.kt` with th
   - `GoogleSignIn.request(activity, webClientId): Result(idToken, rawNonce)`, `GoogleSignIn.friendly(e): String`
   - `SignInViewModel(account)` with `state: StateFlow<UiState(mode, busy, error, notice, done)>`, `setMode`, `submit(name, email, password)`, `google(idToken, rawNonce)`, `googleFailed(message)`; `SignInViewModel.validate(mode, name, email, password): String?`
 
-- [ ] **Step 1: Write the failing view-model test**
+- [x] **Step 1: Write the failing view-model test**
 
 `SignInViewModelTest.kt`:
 ```kotlin
@@ -4002,7 +4002,7 @@ class SignInViewModelTest {
 ```
 Run: `.\gradlew.bat :app:testDebugUnitTest --tests "app.askargus.ui.auth.*"` → Expected: FAIL (unresolved `SignInViewModel`).
 
-- [ ] **Step 2: Implement the view model**
+- [x] **Step 2: Implement the view model**
 
 `ui/auth/SignInViewModel.kt`:
 ```kotlin
@@ -4095,7 +4095,7 @@ class SignInViewModel(private val account: Account) : ViewModel() {
 ```
 Run the test → Expected: PASS. (Note `validate(CREATE, "Asha", "a@b.c", "short")`: not empty, so it reaches the length rule.)
 
-- [ ] **Step 3: Add storage, the container, the host and Google sign-in**
+- [x] **Step 3: Add storage, the container, the host and Google sign-in**
 
 `net/KeystoreCipher.kt`:
 ```kotlin
@@ -4329,7 +4329,7 @@ object GoogleSignIn {
 }
 ```
 
-- [ ] **Step 4: Add the screens and navigation**
+- [x] **Step 4: Add the screens and navigation**
 
 `ui/onboarding/WelcomeScreen.kt`:
 ```kotlin
@@ -4760,14 +4760,14 @@ class MainActivity : ComponentActivity(), Host {
             android:windowSoftInputMode="adjustResize">
 ```
 
-- [ ] **Step 5: Run the tests and build**
+- [x] **Step 5: Run the tests and build**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 6: Try it on the emulator: welcome → sign in → stays signed in → sign out**
+- [x] **Step 6: Try it on the emulator: welcome → sign in → stays signed in → sign out**
 
 `.superpowers/e2e/android_signin.py`:
 ```python
@@ -4794,7 +4794,7 @@ u.tap("Home", exact=True); u.wait_for("Signed out"); print("PASS  signed out")
 Run: `api\.venv\Scripts\python .superpowers\e2e\android_signin.py`
 Expected: three screenshot paths and two PASS lines. View the screenshots: welcome with the eye and headline; the sign-in form; the home placeholder showing the tester's email. (Google sign-in is checked by the user on a real phone in Task 18, after they add the Android OAuth client.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add android/app/src/main android/app/src/test/java/app/askargus/ui
@@ -4823,7 +4823,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
   - `@Composable ResultView(verdict, scanId, onEvidence: (String) -> Unit)`, `@Composable UpiCard(payment, onDismiss)`
   - `AppContainer.activity: ActivityDao`, `AppContainer.reader: ImageReader`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `ScanFlowTest.kt`:
 ```kotlin
@@ -4926,7 +4926,7 @@ class ScanFlowTest {
 ```
 Run: `.\gradlew.bat :app:testDebugUnitTest --tests "app.askargus.scan.*"` → Expected: FAIL (unresolved `ScanFlow`, `ActivityEvent`).
 
-- [ ] **Step 2: Implement the timeline storage and the scan flow**
+- [x] **Step 2: Implement the timeline storage and the scan flow**
 
 `data/ActivityDb.kt`:
 ```kotlin
@@ -5063,7 +5063,7 @@ class ScanFlow(
 ```
 Run the tests → Expected: PASS.
 
-- [ ] **Step 3: Add the image reader and wire it into the container**
+- [x] **Step 3: Add the image reader and wire it into the container**
 
 `read/ImageReader.kt`:
 ```kotlin
@@ -5101,7 +5101,7 @@ In `AppContainer.kt`, add the imports `app.askargus.data.ActivityDao`, `app.aska
     val reader = ImageReader(context.applicationContext)
 ```
 
-- [ ] **Step 4: Add the view model, screen, result and UPI card**
+- [x] **Step 4: Add the view model, screen, result and UPI card**
 
 `ui/scan/ScanViewModel.kt`:
 ```kotlin
@@ -5446,7 +5446,7 @@ private fun moodFor(state: ScanState): EyeMood = when (state) {
 }
 ```
 
-- [ ] **Step 5: Add the Activity screen**
+- [x] **Step 5: Add the Activity screen**
 
 `ui/activity/ActivityScreen.kt`:
 ```kotlin
@@ -5519,7 +5519,7 @@ private fun ActivityRow(e: ActivityEvent, now: Long, onOpen: () -> Unit) {
 }
 ```
 
-- [ ] **Step 6: Update the stubs and navigation**
+- [x] **Step 6: Update the stubs and navigation**
 
 In `ui/Stubs.kt`: delete the `ScanScreen` and `ActivityScreen` lines, and in the Home placeholder add (after the sign-in button line):
 ```kotlin
@@ -5527,7 +5527,7 @@ In `ui/Stubs.kt`: delete the `ScanScreen` and `ActivityScreen` lines, and in the
 ```
 In `ui/nav/ArgusNav.kt`: replace `import app.askargus.ui.ActivityScreen` with `import app.askargus.ui.activity.ActivityScreen` and `import app.askargus.ui.ScanScreen` with `import app.askargus.ui.scan.ScanScreen`.
 
-- [ ] **Step 7: Test, build, and try a real check on the emulator**
+- [x] **Step 7: Test, build, and try a real check on the emulator**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
@@ -5557,7 +5557,7 @@ print("PASS  activity shows the check")
 Run: `api\.venv\Scripts\python .superpowers\e2e\android_scan.py` (the app talks to the live askargus.app, deployed at the end of Task 8).
 Expected: two PASS lines; `scan-result.png` shows the dial, "High risk" in red, reasons and "See full evidence"; `activity.png` lists the check. Afterwards delete the tester's test scan (the SQL from Task 5 Step 7, matching `URGENT your bank account is suspended%`).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add android/app/src/main android/app/src/test/java/app/askargus/scan
@@ -5578,7 +5578,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: `IncomingParser`, `Incoming` (Task 3); `scanViewModel`, `ScanViewModel.check/qr/image` (Task 12).
 - Produces: `class QrAnalyzer(onFound: (String) -> Unit) : ImageAnalysis.Analyzer`; `@Composable QrCameraScreen(container, back)` (final); `ArgusNav(container, onboarded, incoming: StateFlow<Incoming?>, onIncomingHandled: () -> Unit)`; Argus appears as "Check with Argus" in other apps' Share menus for text and images.
 
-- [ ] **Step 1: Add the camera analyzer and screen**
+- [x] **Step 1: Add the camera analyzer and screen**
 
 `read/QrAnalyzer.kt`:
 ```kotlin
@@ -5733,7 +5733,7 @@ private fun CameraPreview(onFound: (String) -> Unit, modifier: Modifier) {
 }
 ```
 
-- [ ] **Step 2: Turn shares into things to check**
+- [x] **Step 2: Turn shares into things to check**
 
 In `MainActivity.kt`, add imports `androidx.core.content.IntentCompat`, `app.askargus.core.Incoming`, `app.askargus.core.IncomingParser`, `kotlinx.coroutines.flow.MutableStateFlow`; add the field and methods below, call `handle(intent)` in `onCreate` right after `super.onCreate(savedInstanceState)` when `savedInstanceState == null`, and pass the flow to the navigation:
 ```kotlin
@@ -5787,7 +5787,7 @@ add imports `android.net.Uri`, `androidx.compose.runtime.LaunchedEffect`, `andro
 ```
 In `ui/Stubs.kt`, delete the `QrCameraScreen` line.
 
-- [ ] **Step 3: Declare the camera and the Share menu entries**
+- [x] **Step 3: Declare the camera and the Share menu entries**
 
 In `AndroidManifest.xml`, next to the INTERNET permission:
 ```xml
@@ -5808,14 +5808,14 @@ and inside `<activity android:name=".MainActivity" …>` after the launcher filt
             </intent-filter>
 ```
 
-- [ ] **Step 4: Build**
+- [x] **Step 4: Build**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 5: Try sharing text, a UPI QR image and a screenshot, and the live camera**
+- [x] **Step 5: Try sharing text, a UPI QR image and a screenshot, and the live camera**
 
 Add to `.superpowers/e2e/adbui.py`:
 ```python
@@ -5894,7 +5894,7 @@ u.back()
 Run: `api\.venv\Scripts\python .superpowers\e2e\android_share.py`
 Expected: four PASS lines. Look at the screenshots: the shared parcel text with a verdict; the UPI card ("This code sends money. It never receives it.", KBC Prize Team, ₹4,999.00); the screenshot's words in the text box with a verdict; the camera preview (the emulator's virtual scene) under "Scan a QR code". If `share_image` fails on media permissions, instead tap **Screenshot** on the Scan screen and pick the pushed image in the photo picker. Then delete the tester's test scans (SQL as in Task 5 Step 7, for `Your parcel is on hold%` and `%SBI KYC%`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add android/app/src/main
@@ -5916,7 +5916,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: `ArgusApi.handoff/family/familyInvite/familyJoin/leaveFamily/inviteInfo/latest` (Task 4); `HandoffPlan`, `Versions` (Task 3); `Prefs.webSignedInFor/setWebSignedInFor` (Task 11); `/api/app/*` (Tasks 5–8).
 - Produces: `class WebPages(activity, container)` with `open(path, force = false)` and `destroy()`; `FamilyViewModel(api)` with `state`, `load()`, `suspend invite(): InviteResponse?`, `leave(linkId)`; `JoinViewModel(api, code)`; final `ArgusScreen`, `SettingsScreen`, `LicensesScreen`, `FamilyScreen`, `JoinFamilyScreen`. Invite links `https://askargus.app/app/join/<code>` open the app when installed.
 
-- [ ] **Step 1: Write the failing family test**
+- [x] **Step 1: Write the failing family test**
 
 `FamilyViewModelTest.kt`:
 ```kotlin
@@ -5982,7 +5982,7 @@ class FamilyViewModelTest {
 ```
 Run: `.\gradlew.bat :app:testDebugUnitTest --tests "app.askargus.ui.family.*"` → Expected: FAIL (unresolved `FamilyViewModel`).
 
-- [ ] **Step 2: Implement the family view models**
+- [x] **Step 2: Implement the family view models**
 
 `ui/family/FamilyViewModel.kt`:
 ```kotlin
@@ -6093,7 +6093,7 @@ class JoinViewModel(private val api: ArgusApi, private val code: String) : ViewM
 ```
 Run the test → Expected: PASS.
 
-- [ ] **Step 3: Open website pages signed in**
+- [x] **Step 3: Open website pages signed in**
 
 `web/WebPages.kt`:
 ```kotlin
@@ -6151,7 +6151,7 @@ In `MainActivity.kt`: add `import app.askargus.web.WebPages`, a field `private l
 ```
 and remove the now-unused `HandoffPlan` import.
 
-- [ ] **Step 4: Add the Argus tab, Settings and Licences**
+- [x] **Step 4: Add the Argus tab, Settings and Licences**
 
 `ui/argus/ArgusScreen.kt`:
 ```kotlin
@@ -6358,7 +6358,7 @@ fun LicensesScreen(back: () -> Unit) {
 }
 ```
 
-- [ ] **Step 5: Add the Family and Join screens**
+- [x] **Step 5: Add the Family and Join screens**
 
 `ui/family/FamilyScreen.kt`:
 ```kotlin
@@ -6517,7 +6517,7 @@ fun JoinFamilyScreen(container: AppContainer, code: String, go: (String) -> Unit
 }
 ```
 
-- [ ] **Step 6: Wire up invite links and remove the stubs**
+- [x] **Step 6: Wire up invite links and remove the stubs**
 
 In `AndroidManifest.xml`, add inside `MainActivity` after the share filters:
 ```xml
@@ -6530,7 +6530,7 @@ In `AndroidManifest.xml`, add inside `MainActivity` after the share filters:
 ```
 In `ui/nav/ArgusNav.kt`, replace `is Incoming.Join -> Unit // Task 14 opens the join screen` with `is Incoming.Join -> nav.navigate(Routes.join(item.code))`, and swap the stub imports for `app.askargus.ui.argus.ArgusScreen`, `app.askargus.ui.settings.SettingsScreen`, `app.askargus.ui.settings.LicensesScreen`, `app.askargus.ui.family.FamilyScreen`, `app.askargus.ui.family.JoinFamilyScreen`. In `ui/Stubs.kt`, delete those five stubs (only `HomeScreen` and `Placeholder` remain).
 
-- [ ] **Step 7: Test, build, and try it on the emulator**
+- [x] **Step 7: Test, build, and try it on the emulator**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
@@ -6571,7 +6571,7 @@ u.wait_for("your own invite"); print(u.screenshot("join-own")); print("PASS  own
 Run: `api\.venv\Scripts\python .superpowers\e2e\android_family.py`
 Expected: PASS lines; screenshots of the History page in the browser (signed in if the user added `SUPABASE_SECRET_KEY`, otherwise the website's sign-in page), the update answer, the Android share sheet with the invite, and the join screen's "That's your own invite" message. Then delete the tester's invites (SQL from Task 7 Step 8).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add android/app/src/main android/app/src/test/java/app/askargus/ui/family
@@ -6593,7 +6593,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: `UpdateDecision`, `Versions`, `Links` (Task 3); `ArgusApi.latest()` (Task 4); `Prefs` (Task 11); `scanViewModel`, `ActivityDao.countSince/deleteBefore` (Task 12).
 - Produces: `Notifications.UPDATES`, `Notifications.createChannels(context)`, `Notifications.updateReady(context, version)`; `UpdateCheckWorker.schedule(context)` (daily, network required); final `HomeScreen(container, go)`.
 
-- [ ] **Step 1: Add notifications and the daily update check**
+- [x] **Step 1: Add notifications and the daily update check**
 
 `work/Notifications.kt`:
 ```kotlin
@@ -6728,7 +6728,7 @@ In `AndroidManifest.xml`, next to the other permissions:
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 ```
 
-- [ ] **Step 2: Build the real Home screen and remove the stubs**
+- [x] **Step 2: Build the real Home screen and remove the stubs**
 
 `ui/home/HomeScreen.kt`:
 ```kotlin
@@ -6875,7 +6875,7 @@ private fun QuickAction(label: String, modifier: Modifier, onClick: () -> Unit) 
 
 Delete `ui/Stubs.kt`. In `ui/nav/ArgusNav.kt` replace `import app.askargus.ui.HomeScreen` with `import app.askargus.ui.home.HomeScreen`.
 
-- [ ] **Step 3: Test, build, and look at Home**
+- [x] **Step 3: Test, build, and look at Home**
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
@@ -6884,7 +6884,7 @@ api\.venv\Scripts\python -c "import sys, time; sys.path.insert(0, '.superpowers/
 ```
 Expected: `BUILD SUCCESSFUL`; `home.png` shows the eye, "Hi, Demo", the four quick actions, the checks-today card, "Coming to Argus" with "Coming soon" pills, and the family card; the bottom bar has Home, Activity, Argus, Settings. Check the notification permission prompt appeared once and was allowed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A android/app/src/main
@@ -6904,7 +6904,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Consumes: everything above; the live askargus.app (deployed in Task 8).
 - Produces: a verified `app-release.apk`; screenshots of every screen for review.
 
-- [ ] **Step 1: Let the scripts install any APK**
+- [x] **Step 1: Let the scripts install any APK**
 
 In `adbui.py`, change `def sign_in_fresh(apk=r"android\app\build\outputs\apk\debug\app-debug.apk"):` to:
 ```python
@@ -6924,7 +6924,7 @@ Update the scripts written before the real Home screen existed:
 - `android_signin.py`: after tapping **Sign in**, call `u.allow_notifications()`; wait for `"Hi, Demo"` instead of `f"Signed in as {email}"` (both places); at the end wait for `"Sign in to check links"` instead of `"Signed out"`.
 - `android_scan.py`: replace `u.wait_for("Signed in as", timeout=40)` with `u.allow_notifications(); u.wait_for("Paste a message", timeout=40)`, and `u.tap("Check something")` with `u.tap("Paste a message")`.
 
-- [ ] **Step 2: Build and install the release APK**
+- [x] **Step 2: Build and install the release APK**
 
 ```powershell
 Set-Location "$env:USERPROFILE\Downloads\ARGUS-main\android"; . .\tools\env.ps1
@@ -6935,7 +6935,7 @@ $env:ARGUS_APK = "android\app\build\outputs\apk\release\app-release.apk"
 ```
 Expected: `BUILD SUCCESSFUL`; the debug build is removed (it was signed with a different key).
 
-- [ ] **Step 3: Run every device script on the release build**
+- [x] **Step 3: Run every device script on the release build**
 
 ```powershell
 api\.venv\Scripts\python .superpowers\e2e\android_signin.py
@@ -6946,11 +6946,11 @@ api\.venv\Scripts\python .superpowers\e2e\android_family.py
 ```
 Expected: every PASS line; the app-links output shows `askargus.app: verified` (the release key matches `assetlinks.json`). With the release build, History should open **without an address bar** (Trusted Web Activity) — check `web-history.png`.
 
-- [ ] **Step 4: Review every screenshot**
+- [x] **Step 4: Review every screenshot**
 
 Read each image in `.superpowers/tmp/android/` (welcome, sign-in, home, scan result, UPI card, screenshot result, camera, activity, web history, settings, invite share, join). Check: nothing cut off or overlapping, text readable on the dark background, the honest words ("No red flags" vs "Safe"), no leftover placeholder text. Fix anything wrong, rebuild, re-run the affected script.
 
-- [ ] **Step 5: Run every test suite and clean up**
+- [x] **Step 5: Run every test suite and clean up**
 
 ```powershell
 Set-Location android; .\gradlew.bat :app:testDebugUnitTest; Set-Location ..
@@ -6969,7 +6969,7 @@ No commit unless Step 4 required fixes (then commit them: `fix(android): <what>`
 - Modify: `web/src/app/privacy/page.tsx`, `AI_HANDOFF.md` (LF — use the Edit tool), `README.md`
 - Create: `android/README.md`
 
-- [ ] **Step 1: Add the app to the privacy page**
+- [x] **Step 1: Add the app to the privacy page**
 
 In `web/src/app/privacy/page.tsx`, set the "Last updated" line to today's date, and add this section after "What other Argus users see":
 ```tsx
@@ -6994,7 +6994,7 @@ In `web/src/app/privacy/page.tsx`, set the "Last updated" line to today's date, 
 Run: `cd web && npx tsc --noEmit -p . && npx eslint src/app/privacy`
 Expected: no errors.
 
-- [ ] **Step 2: Write `android/README.md`**
+- [x] **Step 2: Write `android/README.md`**
 
 ```markdown
 # Argus for Android
@@ -7034,13 +7034,13 @@ password manager or private cloud drive). If the key is lost, installed copies o
 - On a device or emulator: the git-ignored scripts in `.superpowers/e2e/android_*.py` (driven by `adbui.py`).
 ```
 
-- [ ] **Step 3: Update the handoff guide and README**
+- [x] **Step 3: Update the handoff guide and README**
 
 In `AI_HANDOFF.md`: add a TL;DR bullet ("Since <date>: an Android app (Phase 1: scanner, QR/screenshots, Share to Argus, website pages signed in, family invites) — see §6b"), and a new section `### 6b. Android app (android/)` after the website section covering: the package and structure (the table from this plan's File Structure), how it signs in (Supabase REST + Google Credential Manager; the Android OAuth client in the sign-in project), the `/api/app/*` endpoints and caps, the handoff (`SUPABASE_SECRET_KEY`), the family tables and functions, the signing-key location and the backup rule, releases (`android-v*` tags, `/app`, `/api/app/latest`), the device scripts, and "next: Phase 2 call warnings" pointing at the spec. Add `SUPABASE_SECRET_KEY` (Vercel, Sensitive) to the environment-variable table, and the new migration to the database section. In `README.md`, add a short "Android app" paragraph linking `askargus.app/app` and `android/README.md`.
 
 Check line endings: `tr -cd '\r' < AI_HANDOFF.md | wc -c` → `0`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add web/src/app/privacy/page.tsx android/README.md AI_HANDOFF.md README.md
