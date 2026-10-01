@@ -52,6 +52,7 @@ class ScanViewModel(private val flow: ScanFlow, private val reader: ImageReader)
 
     fun reset() {
         _state.value = ScanState.Idle
+        _draft.value = ""
     }
 
     private fun launchScan(first: ScanState, block: suspend () -> ScanState) {
