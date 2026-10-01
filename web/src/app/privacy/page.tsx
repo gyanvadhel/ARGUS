@@ -82,6 +82,23 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="Argus for Android">
+        <p>
+          QR codes and screenshots are read on your phone, and the image never leaves it: only the link or words read
+          from it are checked, like anything you paste. Things you check in the app are checked and saved to your
+          history exactly as on this website. The app&apos;s Activity list stays on your phone.
+        </p>
+        <p>
+          Your sign-in is kept on your phone, encrypted with a key that never leaves it. When you open a page of this
+          website from the app, Argus makes a one-time sign-in link for your own account, so you don&apos;t have to sign
+          in twice. Once a day the app checks the download page for a newer version.
+        </p>
+        <p>
+          Family invites: a link works once and expires after 7 days, and only a scrambled (hashed) form of it is
+          stored. When someone joins, you both see each other&apos;s name in the app. Either of you can remove the link
+          at any time.
+        </p>
+      </Section>
       <Section title="Gmail">
         <p>
           If you connect Gmail, Argus gets read-only access: it can never send, delete or change anything. Each time you

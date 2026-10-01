@@ -14,6 +14,7 @@ variable names are listed, values are not.
 - Since 2026-09-30 the Scan page also reads **QR codes** (camera or picture; UPI codes get a scam warning) and
   **screenshots** (on-device OCR), checks **leaked passwords** (Have I Been Pwned, k-anonymity), and installed
   on Android it takes **shares** from other apps. The engine gained AlienVault OTX, AbuseIPDB and crt.sh (§5).
+- Since 2026-10-01: an Android app (Phase 1: scanner, QR/screenshots, Share to Argus, website pages signed in, family invites) — see §6b
 - **Stack:**
   - `web/`: Next.js 16 + React 19 + Tailwind v4 + Supabase auth/Postgres.
   - `api/`: Python FastAPI scanning engine.
@@ -467,6 +468,58 @@ Both are real models trained on real data, with honest held-out scores; neither 
 - **`lib/api.ts`:** sends the token, and turns a hosted engine's timeouts into "waking up" messages.
 
 ---
+## 6b. Android app (`android/`)
+
+Native Kotlin + Jetpack Compose app (package `app.askargus`). It uses askargus.app's `/api/app/*` endpoints with the signed-in person's Supabase access token, reads QR codes and screenshots on the phone (ML Kit), and opens the website's pages signed in (one-time link + Trusted Web Activity). Design: `docs/superpowers/specs/2026-09-30-android-app-design.md`.
+
+**File structure:**
+```
+Android (`android/`)
+
+| File | Responsibility |
+|---|---|
+| `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml` | Gradle setup and pinned versions |
+| `config.properties` | Public config: app URL, Supabase URL + publishable key, Google web client ID |
+| `tools/env.ps1` | Sets `JAVA_HOME`/`ANDROID_HOME` for builds |
+| `README.md` | How to build, sign, and back up the key |
+| `app/build.gradle.kts` | App module: SDK levels, BuildConfig, signing from `%USERPROFILE%\.argus\keystore.properties`, dependencies |
+| `app/src/main/AndroidManifest.xml` | Activity, permissions, share and App Link filters |
+| `app/src/main/java/app/askargus/core/*` | Pure logic (unit-tested): `Levels`, `Kinds`, `Qr`, `Links`, `Versions`, `ShareInput`, `Nonce`, `OcrText`, `Money`, `TimeAgo`, `Gaze`, `Verdict` models, `IncomingParser`, `HandoffPlan`, `UpdateDecision` |
+| `app/src/main/java/app/askargus/net/*` | `ArgusJson`, `Session`/stores, `SupabaseAuth`, `Account`, `ArgusApi` + models, `EncryptedSessionStore`, `KeystoreCipher` |
+| `app/src/main/java/app/askargus/data/*` | `ActivityDb` (Room), `Prefs` (DataStore) |
+| `app/src/main/java/app/askargus/scan/*` | `ScanFlow` (pure), `ScanState`, `Checker` |
+| `app/src/main/java/app/askargus/read/*` | `ImageReader` (ML Kit), `QrAnalyzer` (camera frames) |
+| `app/src/main/java/app/askargus/web/WebPages.kt` | Handoff + Trusted Web Activity |
+| `app/src/main/java/app/askargus/work/*` | `Notifications`, `UpdateCheckWorker` |
+| `app/src/main/java/app/askargus/ui/**` | Theme, components (eye, dial, pills, cards), screens, navigation, view models |
+| `app/src/main/java/app/askargus/{ArgusApp,AppContainer,MainActivity,Host}.kt` | App wiring |
+| `app/src/test/java/app/askargus/**` | JVM unit tests |
+```
+
+**Sign-in:** Uses Supabase REST via `okhttp` with Google Credential Manager for ID tokens. The Android OAuth client is in a separate Google Cloud project (see §11). Access/refresh tokens are sealed with AES-256-GCM (`lib/token-box.ts` equivalent in Kotlin) and stored in DataStore.
+
+**App endpoints:** Under `/api/app/*` (handled by Next.js route handlers in `web/src/app/app/`):
+- `/api/app/scan` – same as engine `/scan` but requires Android app signature + Supabase JWT
+- `/api/app/handoff` – builds one-time sign-in URL for Trusted Web Activity
+- `/api/app/latest` – fetches newest release metadata from GitHub releases
+- `/api/app/family/*` – invite creation/validation, family list management
+Daily caps (`lib/rate-limit.ts`) apply per account via Supabase JWT claims.
+
+**Handoff:** `SUPABASE_SECRET_KEY` (Vercel, Sensitive) is used to sign handoff tokens. When the app opens a website page, it exchanges a one-time code (via `/api/app/handoff`) for the user's Supabase session, avoiding double sign-in.
+
+**Family:** Schema in `supabase/migrations/20260930120000_family_links.sql` (same as website). Invite links are HMAC-sha256 hashes (truncated) of `{appUrl}/app/join/{code}` with family-specific salt. On join, both parties see each other's name in the app.
+
+**Signing key:** Release builds are signed with `%USERPROFILE%\.argus\argus-release.jks`, whose passwords are in `%USERPROFILE%\.argus\keystore.properties`. Both stay out of git. **Back up the whole `.argus` folder** (e.g. a password manager or private cloud drive). If the key is lost, installed copies of Argus can never be updated, and `web/public/.well-known/assetlinks.json` (which names the key's SHA-256) would have to change.
+
+**Releases:**
+- GitHub releases tagged `android-v<version>` (e.g. `android-v0.1.0`)
+- APK asset: `app/build/outputs/apk/release/app-release.apk`
+- `askargus.app/app` and the in-app update check pick it up (cached for up to an hour)
+- `/api/app/latest` returns `{version, apk, smsHelperApk?, notes, publishedAt}`
+
+**Device scripts:** The git-ignored scripts in `.superpowers\e2e\android_*.py` (driven by `adbui.py`) install the APK, grant notification permissions, and run Task-specific flows.
+
+**Next:** Phase 2 adds call warnings (see `docs/superpowers/specs/2026-09-30-android-app-design.md`).
 
 ## 7. Browser extension (`extension/`)
 

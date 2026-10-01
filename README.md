@@ -102,6 +102,12 @@ you're on, and checks any link from the right-click menu. To install it, open `c
 `edge://extensions`), turn on **Developer mode**, click **Load unpacked** and pick the `extension` folder. More in
 [extension/README.md](extension/README.md).
 
+## Android app
+
+Native Kotlin + Jetpack Compose app (package `app.askargus`). It uses askargus.app's `/api/app/*` endpoints with the signed-in person's Supabase access token, reads QR codes and screenshots on the phone (ML Kit), and opens the website's pages signed in (one-time link + Trusted Web Activity). Design: `docs/superpowers/specs/2026-09-30-android-app-design.md`.
+
+See `android/README.md` for build instructions, signing key backup, and release process.
+
 ## Tests
 
 ```powershell
