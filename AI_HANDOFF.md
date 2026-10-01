@@ -512,6 +512,7 @@ Daily caps (`lib/rate-limit.ts`) apply per account via Supabase JWT claims.
 **Signing key:** Release builds are signed with `%USERPROFILE%\.argus\argus-release.jks`, whose passwords are in `%USERPROFILE%\.argus\keystore.properties`. Both stay out of git. **Back up the whole `.argus` folder** (e.g. a password manager or private cloud drive). If the key is lost, installed copies of Argus can never be updated, and `web/public/.well-known/assetlinks.json` (which names the key's SHA-256) would have to change.
 
 **Releases:**
+- `android-v0.1.0` published on 2026-10-01 (signing key backed up, Google Cloud Android OAuth client created).
 - GitHub releases tagged `android-v<version>` (e.g. `android-v0.1.0`)
 - APK asset: `app/build/outputs/apk/release/app-release.apk`
 - `askargus.app/app` and the in-app update check pick it up (cached for up to an hour)

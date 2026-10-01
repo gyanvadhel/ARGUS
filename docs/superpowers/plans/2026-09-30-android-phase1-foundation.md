@@ -7055,7 +7055,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 **Files:** none in the repo (a GitHub release and the user's settings).
 
-- [ ] **Step 1: Ask the user for their three steps**
+- [x] **Step 1: Ask the user for their three steps**
 
 Tell the user, in plain words:
 1. **Back up the signing key:** copy the folder `C:\Users\GYAN\.argus` to a safe place (Google Drive or a password manager). Without it, the app can never be updated.
@@ -7064,11 +7064,11 @@ Tell the user, in plain words:
 
 Wait for them to say they're done.
 
-- [ ] **Step 2: Push the remaining commits (go-ahead) and check the live site**
+- [x] **Step 2: Push the remaining commits (go-ahead) and check the live site**
 
 After the user says go: `git push origin main`; wait for the Vercel deployment to be READY; then `node .superpowers/e2e/app-api-check.mjs https://askargus.app` → all PASS (handoff on the 200 branch).
 
-- [ ] **Step 3: Get a signed-in GitHub CLI (portable, no admin)**
+- [x] **Step 3: Get a signed-in GitHub CLI (portable, no admin)**
 
 ```powershell
 $ProgressPreference = 'SilentlyContinue'
@@ -7102,7 +7102,7 @@ Needs Android 8 or newer. Install steps: https://askargus.app/app
 ```
 Expected: the release URL is printed. **Manual route** (no gh): the user opens github.com/gyanvadhel/ARGUS → Releases → Draft a new release → tag `android-v0.1.0` → title "Argus for Android 0.1.0" → paste the notes → attach `argus-0.1.0.apk` (from `.superpowers\tmp`) → Publish.
 
-- [ ] **Step 5: Check the release is live everywhere**
+- [x] **Step 5: Check the release is live everywhere**
 
 Within the hour (the release list is cached for up to an hour):
 ```bash
@@ -7115,7 +7115,7 @@ Expected: `{"version":"0.1.0","apk":"https://github.com/gyanvadhel/ARGUS/release
 
 Ask the user to open **askargus.app/app** on their Android phone, install, then try: Google one-tap sign-in, sharing a scam screenshot from Gallery to Argus, scanning a UPI QR code, opening History from the Argus tab (full screen, signed in), and inviting a family member. Note anything odd for a fix release.
 
-- [ ] **Step 7: Record the release**
+- [x] **Step 7: Record the release**
 
 Update `AI_HANDOFF.md` (release `android-v0.1.0` published on <date>, the user's steps done) and the project memory file; commit `docs: Argus for Android 0.1.0 is out` and push with the user's go-ahead.
 
