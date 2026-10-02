@@ -17,7 +17,7 @@ export default async function Home() {
       <Cursor />
       <Nav signedIn={!!user} />
       <main>
-        <Hero />
+        <Hero signedIn={!!user} />
         <HundredEyes />
         <Channels />
         <HowItWorks />

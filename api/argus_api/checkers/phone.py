@@ -137,6 +137,11 @@ def validity_signal(parsed: PhoneNumber | None, reason: str | None = None) -> Si
                       summary="Premium-rate number: calling back can cost you money",
                       evidence={**evidence, "threat_type": "Premium-rate fraud"})
     place = "" if region in ("Toll-free", "Unknown location") else f" from {region}"
+    if parsed.country_code == 91 and number_type in (PhoneNumberType.MOBILE, PhoneNumberType.FIXED_LINE, PhoneNumberType.FIXED_LINE_OR_MOBILE):
+        evidence["trai_advisory"] = (
+            "Under TRAI & RBI regulations, legitimate banks and lenders call from official 1600 or 140 series, "
+            "never personal 10-digit mobile numbers."
+        )
     return Signal(source=source, status="clean", score=0, weight=1.0,
                   summary=f"Valid {line} number{place}", evidence=evidence)
 

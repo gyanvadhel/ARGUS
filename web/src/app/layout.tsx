@@ -23,7 +23,12 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: "Argus: the watcher that never sleeps", description },
 };
 
-export const viewport: Viewport = { themeColor: "#08080a" };
+export const viewport: Viewport = {
+  themeColor: "#08080a",
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

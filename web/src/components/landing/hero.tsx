@@ -10,6 +10,8 @@ import { ReactiveWord } from "@/components/fx/reactive-word";
 import { detectKind } from "@/lib/detect";
 import type { ScanKind } from "@/lib/types";
 import { useMedia } from "@/lib/use-media";
+import { cn } from "@/lib/utils";
+import { HeroBreakdown } from "./hero-breakdown";
 
 const SAMPLES = [
   { label: "a phishing link", value: "http://paypal-security-alert.net/verify-account" },
@@ -31,22 +33,30 @@ function smooth(a: number, b: number, x: number) {
   return t * t * (3 - 2 * t);
 }
 
-function PreviewLine({ result }: { result: PreviewResult }) {
+function PreviewLine({ result, onClear }: { result: PreviewResult; onClear?: () => void }) {
   if (!result.ok) return <span className="text-risk-high">{result.error}</span>;
   return (
-    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <LevelPill level={result.level} score={result.score} verified={result.verified} />
-      <span className="text-foreground/75">
-        {result.threat !== "None" ? result.threat : result.verified ? "Positive evidence it's legitimate" : "Nothing suspicious found"}
+    <span className="flex flex-wrap items-center justify-between w-full gap-x-3 gap-y-1">
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <LevelPill level={result.level} score={result.score} verified={result.verified} />
+        <span className="text-foreground/75">
+          {result.threat !== "None" ? result.threat : result.verified ? "Positive evidence it's legitimate" : "Nothing suspicious found"}
+        </span>
       </span>
-      <Link href="/signup" className="text-muted-foreground underline decoration-foreground/25 underline-offset-4 hover:text-foreground">
-        See the full evidence
-      </Link>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline decoration-foreground/20 underline-offset-4"
+        >
+          Check another
+        </button>
+      )}
     </span>
   );
 }
 
-export function Hero() {
+export function Hero({ signedIn = false }: { signedIn?: boolean }) {
   const section = useRef<HTMLElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
   const shade = useRef<HTMLDivElement>(null);
@@ -114,10 +124,28 @@ export function Hero() {
   return (
     <section ref={section} className="relative h-[210vh]" aria-label="Argus">
       <div className="sticky top-0 h-dvh overflow-hidden">
-        <Eye mood={mood} dive={dive} target={target} distance={6.8} offsetY={portrait ? -0.1 : 0.6} className="absolute inset-0" />
+        <Eye
+          mood={mood}
+          dive={dive}
+          target={target}
+          distance={6.8}
+          offsetY={portrait ? (focused ? -0.45 : -0.1) : (result ? 0.35 : 0.6)}
+          className="absolute inset-0"
+        />
 
-        <div ref={overlay} className="absolute inset-0 flex flex-col justify-between px-6 pt-28 sm:px-10">
-          <div className="mx-auto flex w-full max-w-[1600px] items-start justify-between gap-10">
+        <div
+          ref={overlay}
+          className={cn(
+            "absolute inset-0 flex flex-col justify-between px-6 sm:px-10 transition-all duration-300",
+            focused && compact ? "pt-14 pb-4" : "pt-24 pb-8 sm:pt-28 sm:pb-12",
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto flex w-full max-w-[1600px] items-start justify-between gap-10 transition-all duration-300",
+              focused && compact ? "max-h-0 opacity-0 overflow-hidden -translate-y-4 pointer-events-none pb-0 m-0" : "max-h-40 opacity-100",
+            )}
+          >
             <div className="max-w-sm">
               <p className="font-serif text-3xl leading-tight">The watcher that never sleeps.</p>
               <p className="mt-4 text-[15px] leading-relaxed text-foreground/70">
@@ -132,7 +160,7 @@ export function Hero() {
             </p>
           </div>
 
-          <div>
+          <div className={cn("transition-transform duration-300 ease-out", focused && compact ? "-translate-y-6 sm:translate-y-0" : "")}>
             {/* The line of sight: you write on a single hairline the eye is watching. */}
             <form
               onSubmit={(e) => {
@@ -152,7 +180,14 @@ export function Hero() {
                     setValue(e.target.value);
                     if (result) setResult(null);
                   }}
-                  onFocus={() => setFocused(true)}
+                  onFocus={() => {
+                    setFocused(true);
+                    if (compact) {
+                      setTimeout(() => {
+                        field.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+                      }, 120);
+                    }
+                  }}
                   onBlur={() => setFocused(false)}
                   placeholder={compact ? "Paste anything to check" : "Paste a link, a message or a phone number"}
                   aria-label="Something to check"
@@ -167,7 +202,7 @@ export function Hero() {
               </div>
               <div className="mt-3 flex min-h-7 flex-wrap items-center justify-between gap-x-8 gap-y-2 text-sm" aria-live="polite">
                 {result ? (
-                  <PreviewLine result={result} />
+                  <PreviewLine result={result} onClear={() => setResult(null)} />
                 ) : (
                   <>
                     <span className="text-muted-foreground">
@@ -195,9 +230,18 @@ export function Hero() {
                   </>
                 )}
               </div>
+
+              {result && result.ok && (
+                <HeroBreakdown result={result} onClear={() => setResult(null)} />
+              )}
             </form>
 
-            <h1 className="font-display pointer-events-none mt-4 select-none text-center text-[27vw] leading-[0.74] text-foreground [transform:translateY(16%)]">
+            <h1
+              className={cn(
+                "font-display pointer-events-none mt-4 select-none text-center text-[27vw] leading-[0.74] text-foreground [transform:translateY(16%)] transition-all duration-300",
+                (focused && compact) || result ? "hidden opacity-0" : "opacity-100",
+              )}
+            >
               <ReactiveWord text="ARGUS" />
             </h1>
           </div>
