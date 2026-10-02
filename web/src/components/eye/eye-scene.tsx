@@ -80,6 +80,23 @@ function makeDotGeometry() {
   return g;
 }
 
+function makeRetinaGeometry() {
+  const pts: number[] = [];
+  const rings = 4;
+  for (let r = 0; r < rings; r++) {
+    const rad = 0.07 + r * 0.08;
+    const n = 36 + r * 16;
+    for (let i = 0; i < n; i++) {
+      const az = (i / n) * Math.PI * 2;
+      pts.push(rad * Math.cos(az), rad * Math.sin(az), 1.002);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
+  return g;
+}
+
 function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSceneProps, "mood" | "distance" | "offsetY">> & Pick<EyeSceneProps, "dive" | "target">) {
   const ball = useRef<THREE.Group>(null);
   const upper = useRef<THREE.Mesh>(null);
@@ -94,6 +111,7 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
       uTime: { value: 0 },
       uSpin: { value: 0 },
       uPupil: { value: MOODS.idle.pupil },
+      uDive: { value: 0 },
       uScale: { value: 1 },
       uC1: { value: colors[0] },
       uC2: { value: colors[1] },
@@ -109,6 +127,7 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
       cornea: new THREE.SphereGeometry(1.014, 96, 64),
       lid: new THREE.SphereGeometry(1.04, 96, 32, 0, Math.PI * 2, 0, Math.PI / 2),
       dots: makeDotGeometry(),
+      retina: makeRetinaGeometry(),
     }),
     [],
   );
@@ -190,7 +209,36 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
           gl_FragColor = vec4(grad * (1.1 + 1.1 * vTwinkle) * a, a);
         }`,
     });
-    // Black + additive: only the reflections of the studio lights show, like a wet cornea.
+    const retina = new THREE.ShaderMaterial({
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+      blending: THREE.AdditiveBlending,
+      vertexShader: /* glsl */ `
+        uniform float uTime; uniform float uDive; uniform float uScale;
+        void main() {
+          float spin = uTime * 0.25;
+          float c = cos(spin), s = sin(spin);
+          vec3 p = position;
+          p.xy = mat2(c, -s, s, c) * p.xy;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float growth = smoothstep(0.18, 0.45, uDive);
+          gl_PointSize = (4.5 * uScale * growth) / -mv.z;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform vec3 uC1; uniform vec3 uC2; uniform float uDive;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          if (d > 0.5) discard;
+          float a = smoothstep(0.5, 0.1, d) * smoothstep(0.18, 0.45, uDive) * 0.85;
+          vec3 col = mix(uC1, uC2, 0.5) * 2.2;
+          gl_FragColor = vec4(col, a);
+        }
+      `,
+    });
     const cornea = new THREE.MeshPhysicalMaterial({
       color: "#000000",
       roughness: 0.04,
@@ -203,7 +251,7 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
       blending: THREE.AdditiveBlending,
     });
     const lid = new THREE.MeshBasicMaterial({ color: BG, side: THREE.DoubleSide, toneMapped: false });
-    return { sclera, iris, dots, cornea, lid };
+    return { sclera, iris, dots, retina, cornea, lid };
   }, [colors, uniforms]);
 
   // Mutable animation state kept outside React so a frame never re-renders anything.
@@ -291,6 +339,7 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
     uniforms.uTime.value = state.clock.elapsedTime;
     uniforms.uSpin.value += dt * a.spinSpeed * 0.25;
     uniforms.uPupil.value = a.pupil;
+    uniforms.uDive.value = dived;
     uniforms.uScale.value = (size.height * state.viewport.dpr) / 190;
     m.colors.forEach((c, i) => {
       targetColors[i].set(c);
@@ -304,7 +353,8 @@ function EyeModel({ mood, distance, offsetY, dive, target }: Required<Pick<EyeSc
         <mesh geometry={geo.ball} material={mats.sclera} />
         <mesh geometry={geo.iris} material={mats.iris} rotation-x={Math.PI / 2} renderOrder={1} />
         <points geometry={geo.dots} material={mats.dots} renderOrder={2} />
-        <mesh geometry={geo.cornea} material={mats.cornea} renderOrder={3} />
+        <points geometry={geo.retina} material={mats.retina} renderOrder={3} />
+        <mesh geometry={geo.cornea} material={mats.cornea} renderOrder={4} />
       </group>
       <mesh ref={upper} geometry={geo.lid} material={mats.lid} rotation-x={0} />
       <mesh ref={lower} geometry={geo.lid} material={mats.lid} rotation-z={Math.PI} />
