@@ -11,7 +11,6 @@ import { detectKind } from "@/lib/detect";
 import type { ScanKind } from "@/lib/types";
 import { useMedia } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
-import { EyeInnerPortal } from "./eye-inner-portal";
 import { HeroBreakdown } from "./hero-breakdown";
 
 const SAMPLES = [
@@ -60,7 +59,6 @@ function PreviewLine({ result, onClear }: { result: PreviewResult; onClear?: () 
 export function Hero({ signedIn = false }: { signedIn?: boolean }) {
   const section = useRef<HTMLElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
-  const eyeInner = useRef<HTMLDivElement>(null);
   const shade = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const progress = useRef(0);
@@ -73,7 +71,7 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
   const portrait = useMedia("(max-aspect-ratio: 4/5)");
   const compact = useMedia("(max-width: 640px)");
 
-  // Scroll drives the dive into the pupil: copy fades, camera pushes in, inner telemetry reveals inside pupil.
+  // Scroll drives the dive into the pupil: copy fades, the camera pushes in, then black.
   useEffect(() => {
     let raf = 0;
     const loop = () => {
@@ -83,23 +81,11 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
         const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)));
         progress.current = p;
         if (overlay.current) {
-          overlay.current.style.opacity = String(1 - smooth(0.03, 0.26, p));
+          overlay.current.style.opacity = String(1 - smooth(0.03, 0.28, p));
           overlay.current.style.transform = `translate3d(0, ${(-p * 90).toFixed(1)}px, 0)`;
-          overlay.current.style.pointerEvents = p > 0.18 ? "none" : "";
+          overlay.current.style.pointerEvents = p > 0.2 ? "none" : "";
         }
-        if (eyeInner.current) {
-          // Fade in smoothly as the camera enters the pupil (between p = 0.20 and 0.35)
-          // Stay clearly framed in the center of the pupil (p = 0.35 to 0.72)
-          // Fade out as the scene transitions to black shade (p = 0.72 to 0.88)
-          const fadeIn = smooth(0.18, 0.34, p);
-          const fadeOut = 1 - smooth(0.70, 0.88, p);
-          const innerOpacity = Math.max(0, Math.min(1, fadeIn * fadeOut));
-          const scale = 0.86 + 0.14 * Math.min(1, smooth(0.18, 0.38, p));
-          eyeInner.current.style.opacity = String(innerOpacity.toFixed(3));
-          eyeInner.current.style.transform = `scale(${scale.toFixed(3)})`;
-          eyeInner.current.style.pointerEvents = innerOpacity > 0.4 ? "auto" : "none";
-        }
-        if (shade.current) shade.current.style.opacity = String(smooth(0.72, 0.95, p));
+        if (shade.current) shade.current.style.opacity = String(smooth(0.7, 0.95, p));
       }
       raf = requestAnimationFrame(loop);
     };
@@ -146,21 +132,6 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
           offsetY={portrait ? (focused ? -0.45 : -0.1) : (result ? 0.35 : 0.6)}
           className="absolute inset-0"
         />
-
-        {/* The Inside-the-Eye Portal: revealed directly inside the pupil when scrolling */}
-        <div
-          ref={eyeInner}
-          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4 sm:p-6 opacity-0"
-        >
-          <EyeInnerPortal
-            result={result}
-            busy={busy}
-            onSampleSelect={(sample) => {
-              setValue(sample);
-              void run(sample);
-            }}
-          />
-        </div>
 
         <div
           ref={overlay}
