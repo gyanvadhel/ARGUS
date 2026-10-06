@@ -278,8 +278,8 @@ phone; family members see only protection status and alert types as described ab
 2. **Call warnings:** call screening, phone endpoint + shared cache + known scam numbers + report, 140/1600 series and
    the bank-mobile text rule (engine + website Caller ID).
 3. **Scam-site blocker:** engine `/blocklist`, website `/api/blocklist`, VPN service, tiles, widget.
-4. **SMS helper add-on.**
-5. **Gmail alerts.**
+4. ~~SMS helper add-on~~ — dropped (user decision, 2026-10-06).
+5. ~~Gmail alerts~~ — dropped (user decision, 2026-10-06); Gmail scanning stays on the website.
 6. **Family circle:** devices, status, FCM push, "protection switched off" (cron), in-app family screen.
 
 ## The user's steps (all free)

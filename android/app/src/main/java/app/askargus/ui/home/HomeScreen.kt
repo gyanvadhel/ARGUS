@@ -44,8 +44,7 @@ import java.util.Calendar
 private val COMING = listOf(
     "Warnings while a scam call rings",
     "A scam-site blocker for every app",
-    "Automatic text checks (optional add-on)",
-    "Gmail scam alerts",
+    "Family alerts on your phone",
 )
 
 @Composable

@@ -72,8 +72,8 @@ export default async function AppPage() {
       <section className="mt-14">
         <h2 className="font-serif text-2xl">Coming next</h2>
         <p className="mt-3 leading-relaxed text-foreground/80">
-          Warnings while a scam call rings, a scam-site blocker for every app, automatic text checks (an optional add-on)
-          and Gmail alerts. The app tells you when an update is ready.
+          Warnings while a scam call rings, a scam-site blocker for every app and family alerts on your phone.
+          The app tells you when an update is ready.
         </p>
       </section>
 
