@@ -98,4 +98,33 @@ class ArgusApiTest {
         server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":"No Android release yet."}"""))
         assertNull(api.latest())
     }
+
+    @Test fun phoneLookupSendsNumberCountryAndCall() = runTest {
+        server.enqueue(MockResponse().setBody("""{"verdict":{"kind":"phone","subject":"+919876543210","score":85,"level":"HIGH RISK","threat_type":"Possible scam call","signals":[]},"cached":true}"""))
+        val r = api.phone("+919876543210", "IN", call = true)
+        assertEquals(85, r.verdict.score)
+        assertTrue(r.cached)
+        val req = server.takeRequest()
+        assertEquals("GET", req.method)
+        assertEquals("/api/app/phone?number=%2B919876543210&country=IN&call=1", req.path)
+        assertEquals("Bearer a1", req.getHeader("Authorization"))
+    }
+
+    @Test fun scamNumbersAreDecoded() = runTest {
+        server.enqueue(MockResponse().setBody("""{"numbers":[{"number":"+14155550100","label":"Reported as a scam by 3 Argus users"}]}"""))
+        val list = api.scamNumbers()
+        assertEquals(listOf(ScamNumber("+14155550100", "Reported as a scam by 3 Argus users")), list)
+        assertEquals("/api/app/scam-numbers", server.takeRequest().path)
+    }
+
+    @Test fun reportPostsTheNumber() = runTest {
+        server.enqueue(MockResponse().setBody("""{"ok":true}"""))
+        api.report("+919876543210", "IN")
+        val req = server.takeRequest()
+        assertEquals("POST", req.method)
+        assertEquals("/api/app/report", req.path)
+        val body = req.body.readUtf8()
+        assertTrue(body.contains("\"number\":\"+919876543210\""))
+        assertTrue(body.contains("\"country\":\"IN\""))
+    }
 }

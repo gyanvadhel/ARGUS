@@ -1,5 +1,6 @@
 package app.askargus.net
 
+import app.askargus.calls.PhoneLookup
 import app.askargus.core.Verdict
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -28,6 +29,9 @@ class SignedOutException : Exception("Sign in to use this.")
 @Serializable data class JoinResponse(val name: String)
 @Serializable data class FamilyMember(val linkId: String, val name: String, val joinedAt: String)
 @Serializable data class FamilyList(val members: List<FamilyMember> = emptyList())
+@Serializable data class PhoneResponse(val verdict: Verdict, val cached: Boolean = false, val id: String? = null)
+@Serializable data class ScamNumber(val number: String, val label: String)
+@Serializable data class ScamNumbers(val numbers: List<ScamNumber> = emptyList())
 @Serializable data class InviteInfo(val name: String? = null, val valid: Boolean = false)
 @Serializable data class LatestRelease(
     val version: String,
@@ -48,9 +52,24 @@ class ArgusApi(
     private val auth: SupabaseAuth,
     private val sessions: SessionStore,
     private val now: () -> Long = { System.currentTimeMillis() / 1000 },
-) : Checker {
+) : Checker, PhoneLookup {
     private val base = appUrl.trimEnd('/')
     private val refreshLock = Mutex()
+
+    override suspend fun phone(number: String, country: String?, call: Boolean): PhoneResponse =
+        authed(
+            "GET",
+            "/api/app/phone?number=${enc(number)}" + (country?.let { "&country=${enc(it)}" } ?: "") + (if (call) "&call=1" else ""),
+            null,
+            PhoneResponse.serializer(),
+        )
+
+    suspend fun scamNumbers(): List<ScamNumber> =
+        authed("GET", "/api/app/scam-numbers", null, ScamNumbers.serializer()).numbers
+
+    suspend fun report(number: String, country: String?) {
+        authed("POST", "/api/app/report", buildJsonObject { put("number", number); country?.let { put("country", it) } }, JsonObject.serializer())
+    }
 
     override suspend fun scan(input: String, save: String): ScanResponse =
         authed("POST", "/api/app/scan", buildJsonObject { put("input", input); put("save", save) }, ScanResponse.serializer())
