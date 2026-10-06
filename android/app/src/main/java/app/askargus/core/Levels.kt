@@ -31,6 +31,7 @@ object Kinds {
         "file" -> "File"
         "call" -> "Call"
         "upi" -> "UPI code"
+        "site" -> "Blocked site"
         else -> "Check"
     }
 }

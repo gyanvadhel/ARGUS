@@ -23,6 +23,7 @@ class CallActionReceiver : BroadcastReceiver() {
                 when (intent.action) {
                     CallNotifications.ACTION_NOT_SCAM -> container.callMemory.markNotScam(number)
                     CallNotifications.ACTION_SCAM -> {
+                        container.callMemory.unmarkNotScam(number)
                         container.callMemory.remember(number, 100)
                         runCatching { container.api.report(number, country) }
                     }

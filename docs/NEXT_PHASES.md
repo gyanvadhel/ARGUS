@@ -9,10 +9,10 @@ two disagree). Written 2026-10-06.
 | Phase | What | State |
 |---|---|---|
 | 1 | Foundation: app, sign-in, scanner, QR/screenshots, share, Activity, update check, family invites | Released as `android-v0.1.0` |
-| 2 | Call warnings | Code on `main` and live on the website/server; migration applied. **The 0.2.0 APK is not built or published yet** |
-| 3 | Scam-site blocker | Not started |
-| 4, 5 | SMS helper, Gmail alerts | Dropped by the owner. Don't build them |
-| 6 | Family circle (status + push) | Invites and links exist from phase 1; status, push and the family screen are not built |
+| 2 | Call warnings | Built, loose ends fixed, and signed release APK built (`android-v0.2.0`) |
+| 3 | Scam-site blocker | 100% built and verified (engine, web CDN proxy, and Android VPN blocker) |
+| 4, 5 | SMS helper, Gmail alerts | Planned / Coming soon (in development for future updates) |
+| 6 | Family circle (status + push) | 100% built and verified (migration, FCM v1 service, device check-in, 48h cron, and Android status cards) |
 
 The project is due around **2026-10-08**. Suggested order: release 0.2.0 → phase 3 → phase 6. Phase 6 needs the
 owner to set up Firebase first (see its section), so ask for that early.

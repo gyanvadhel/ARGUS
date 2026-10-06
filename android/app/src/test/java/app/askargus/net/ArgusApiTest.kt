@@ -134,4 +134,48 @@ class ArgusApiTest {
         assertTrue(body.contains("\"number\":\"+919876543210\""))
         assertTrue(body.contains("\"country\":\"IN\""))
     }
+
+    @Test fun reportDevicePostsProtectionsAndFCMToken() = runTest {
+        server.enqueue(MockResponse().setBody("""{"ok":true}"""))
+        val ok = api.reportDevice(
+            DeviceReport(
+                deviceId = "dev-123",
+                name = "Google Pixel 8",
+                appVersion = "0.2.0",
+                protections = mapOf("calls" to true, "blocker" to false),
+                fcmToken = "token-xyz",
+            )
+        )
+        assertTrue(ok)
+        val req = server.takeRequest()
+        assertEquals("POST", req.method)
+        assertEquals("/api/app/device", req.path)
+        assertEquals("Bearer a1", req.getHeader("Authorization"))
+        val body = req.body.readUtf8()
+        assertTrue(body.contains("\"deviceId\":\"dev-123\""))
+        assertTrue(body.contains("\"name\":\"Google Pixel 8\""))
+        assertTrue(body.contains("\"appVersion\":\"0.2.0\""))
+        assertTrue(body.contains("\"calls\":true"))
+        assertTrue(body.contains("\"blocker\":false"))
+        assertTrue(body.contains("\"fcmToken\":\"token-xyz\""))
+    }
+
+    @Test fun familyStatusReturnsMemberDevices() = runTest {
+        val json = """{"members":[{"memberId":"m1","memberName":"Mom","deviceId":"d1","deviceName":"Pixel 7","appVersion":"0.2.0","protections":{"calls":true,"blocker":true},"lastSeenAt":"2026-10-06T12:00:00Z"}]}"""
+        server.enqueue(MockResponse().setBody(json))
+        val resp = api.familyStatus()
+        assertEquals(1, resp.members.size)
+        val mom = resp.members[0]
+        assertEquals("m1", mom.memberId)
+        assertEquals("Mom", mom.memberName)
+        assertEquals("Pixel 7", mom.deviceName)
+        assertEquals("0.2.0", mom.appVersion)
+        assertEquals(true, mom.protections["calls"])
+        assertEquals(true, mom.protections["blocker"])
+        assertEquals("2026-10-06T12:00:00Z", mom.lastSeenAt)
+        val req = server.takeRequest()
+        assertEquals("GET", req.method)
+        assertEquals("/api/app/family/status", req.path)
+        assertEquals("Bearer a1", req.getHeader("Authorization"))
+    }
 }

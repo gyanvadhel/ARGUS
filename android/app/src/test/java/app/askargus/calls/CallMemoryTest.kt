@@ -40,6 +40,14 @@ class CallMemoryTest {
         assertFalse(memory().isNotScam("+14155550101"))
     }
 
+    @Test fun unmarkNotScamRemovesFromNotScam() = runTest {
+        val m = memory()
+        m.markNotScam("+14155550100")
+        assertTrue(m.isNotScam("+14155550100"))
+        m.unmarkNotScam("+14155550100")
+        assertFalse(m.isNotScam("+14155550100"))
+    }
+
     @Test fun sameNumberWarnsOnceInTwoMinutes() = runTest {
         assertTrue(memory().shouldWarn("+14155550100"))
         clock += 60_000

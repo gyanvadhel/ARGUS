@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -37,6 +38,23 @@ class SignedOutException : Exception("Sign in to use this.")
 @Serializable data class ScamNumber(val number: String, val label: String)
 @Serializable data class ScamNumbers(val numbers: List<ScamNumber> = emptyList())
 @Serializable data class InviteInfo(val name: String? = null, val valid: Boolean = false)
+@Serializable data class DeviceReport(
+    val deviceId: String,
+    val name: String? = null,
+    val appVersion: String,
+    val protections: Map<String, Boolean> = emptyMap(),
+    val fcmToken: String? = null,
+)
+@Serializable data class MemberDevice(
+    val memberId: String,
+    val memberName: String,
+    val deviceId: String? = null,
+    val deviceName: String? = null,
+    val appVersion: String? = null,
+    val protections: Map<String, Boolean> = emptyMap(),
+    val lastSeenAt: String? = null,
+)
+@Serializable data class FamilyStatusResponse(val members: List<MemberDevice> = emptyList())
 @Serializable data class LatestRelease(
     val version: String,
     val apk: String,
@@ -88,6 +106,25 @@ class ArgusApi(
         authed("POST", "/api/app/family/join", buildJsonObject { put("code", code) }, JoinResponse.serializer())
 
     suspend fun family(): FamilyList = authed("GET", "/api/app/family", null, FamilyList.serializer())
+
+    suspend fun familyStatus(): FamilyStatusResponse =
+        authed("GET", "/api/app/family/status", null, FamilyStatusResponse.serializer())
+
+    suspend fun reportDevice(report: DeviceReport): Boolean = try {
+        val payload = buildJsonObject {
+            put("deviceId", report.deviceId)
+            report.name?.let { put("name", it) }
+            put("appVersion", report.appVersion)
+            putJsonObject("protections") {
+                report.protections.forEach { (k, v) -> put(k, v) }
+            }
+            report.fcmToken?.let { put("fcmToken", it) }
+        }
+        authed("POST", "/api/app/device", payload, JsonObject.serializer())
+        true
+    } catch (e: Exception) {
+        false
+    }
 
     suspend fun leaveFamily(linkId: String) {
         authed("DELETE", "/api/app/family/${enc(linkId)}", null, JsonObject.serializer())

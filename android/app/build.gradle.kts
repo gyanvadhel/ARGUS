@@ -27,8 +27,8 @@ android {
         applicationId = "app.askargus"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         buildConfigField("String", "APP_URL", quoted("appUrl"))
         buildConfigField("String", "SUPABASE_URL", quoted("supabaseUrl"))
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", quoted("supabasePublishableKey"))
@@ -95,7 +95,12 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
     implementation(libs.androidbrowserhelper)
+    implementation(libs.firebase.messaging)
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.kotlinx.coroutines.test)
+}
+
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }

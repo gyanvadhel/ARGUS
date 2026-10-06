@@ -53,7 +53,10 @@ fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
     }
 
     fun turnOn() {
-        scope.launch { container.prefs.setCallWarnings(true) }
+        scope.launch {
+            container.prefs.setCallWarnings(true)
+            app.askargus.work.DeviceSyncWorker.syncNow(context)
+        }
         ScamListWorker.now(context)
         note = null
         if (!notificationsAllowed) allowNotifications()
@@ -79,7 +82,10 @@ fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
             checked = false, enabled = true,
         ) { allowNotifications() }
         CallRole.State.ON -> SwitchRow("Call warnings", explain, checked = true, enabled = true) {
-            scope.launch { container.prefs.setCallWarnings(false) }
+            scope.launch {
+                container.prefs.setCallWarnings(false)
+                app.askargus.work.DeviceSyncWorker.syncNow(context)
+            }
             note = "Argus has stopped checking calls. To take away its call-screening role as well, go to " +
                 "Settings > Apps > Default apps > Caller ID & spam."
         }

@@ -33,6 +33,8 @@ import app.askargus.core.Links
 import app.askargus.core.Versions
 import app.askargus.ui.components.ArgusButton
 import app.askargus.ui.components.ArgusCard
+import app.askargus.blocker.ArgusVpnService
+import app.askargus.blocker.BlockerState
 import app.askargus.ui.components.EyeMood
 import app.askargus.ui.components.LivingEye
 import app.askargus.ui.components.SoonPill
@@ -42,8 +44,8 @@ import app.askargus.ui.theme.ArgusColors
 import java.util.Calendar
 
 private val COMING = listOf(
-    "A scam-site blocker for every app",
-    "Family alerts on your phone",
+    "SMS scam helper",
+    "Automatic Gmail alerts",
 )
 
 @Composable
@@ -53,6 +55,10 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
     val session by container.account.session.collectAsState()
     val update by container.prefs.availableUpdate.collectAsState(initial = null)
     val callsOn by container.prefs.callWarnings.collectAsState(initial = false)
+    val blockerOn by container.prefs.blockerEnabled.collectAsState(initial = false)
+    val vpnRunning = ArgusVpnService.running
+    val blockerActive = blockerOn && vpnRunning
+    val blocksToday = BlockerState.blocksToday
     val startOfDay = remember {
         Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -72,7 +78,10 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        LivingEye(EyeMood.IDLE, Modifier.fillMaxWidth(0.62f).align(Alignment.CenterHorizontally))
+        LivingEye(
+            if (callsOn || blockerActive) EyeMood.WATCHING else EyeMood.IDLE,
+            Modifier.fillMaxWidth(0.62f).align(Alignment.CenterHorizontally),
+        )
         Text(session?.name?.substringBefore(' ')?.let { "Hi, $it" } ?: "Argus", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Check anything for scams, and let Argus speak up while a scam number is calling.",
@@ -107,6 +116,18 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
         ArgusCard(onClick = { go(Routes.SETTINGS) }) {
             Text("Call warnings", style = MaterialTheme.typography.titleMedium)
             Text(if (callsOn && session != null) "On" else "Off, tap to turn on", color = ArgusColors.MutedText)
+        }
+        ArgusCard(onClick = { go(Routes.SETTINGS) }) {
+            Text("Scam-site blocker", style = MaterialTheme.typography.titleMedium)
+            if (blockerActive) {
+                Text(
+                    if (blocksToday == 0) "On · no scam sites blocked today"
+                    else "$blocksToday scam ${if (blocksToday == 1) "site" else "sites"} blocked today",
+                    color = ArgusColors.Foreground,
+                )
+            } else {
+                Text("Off, tap to turn on", color = ArgusColors.MutedText)
+            }
         }
         ArgusCard {
             Text("$today", style = MaterialTheme.typography.displayMedium)

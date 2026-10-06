@@ -5,10 +5,11 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 from argus_api import config
+from argus_api.blocklist import build_blocklist
 from argus_api.checkers.email import check_email
 from argus_api.checkers.file import MAX_FILE_BYTES, check_file
 from argus_api.checkers.phone import Community, normalize, scan_phone
@@ -106,6 +107,21 @@ async def scan_file(file: UploadFile) -> Verdict:
     if not data:
         raise HTTPException(status_code=422, detail="File is empty")
     return await check_file(file.filename or "upload", data)
+
+
+_blocklist_cache: tuple[float, str] | None = None
+
+
+@app.get("/blocklist")
+def blocklist() -> PlainTextResponse:
+    """Plain-text host list for the Android scam-site blocker.  Rebuilt when feeds refresh."""
+    import time
+    global _blocklist_cache
+    now = time.time()
+    if _blocklist_cache is None or now - _blocklist_cache[0] > 6 * 3600:
+        names = build_blocklist(feeds.store)
+        _blocklist_cache = (now, "\n".join(names) + "\n" if names else "")
+    return PlainTextResponse(_blocklist_cache[1], media_type="text/plain")
 
 
 @app.get("/phone/normalize")

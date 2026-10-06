@@ -17,6 +17,7 @@ class FamilyViewModel(private val api: ArgusApi) : ViewModel() {
     data class UiState(
         val loading: Boolean = true,
         val members: List<FamilyMember> = emptyList(),
+        val statusList: List<app.askargus.net.MemberDevice> = emptyList(),
         val error: String? = null,
         val busy: Boolean = false,
         val signedOut: Boolean = false,
@@ -29,7 +30,9 @@ class FamilyViewModel(private val api: ArgusApi) : ViewModel() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             _state.value = try {
-                UiState(loading = false, members = api.family().members)
+                val family = api.family()
+                val status = runCatching { api.familyStatus().members }.getOrDefault(emptyList())
+                UiState(loading = false, members = family.members, statusList = status)
             } catch (e: SignedOutException) {
                 UiState(loading = false, signedOut = true)
             } catch (e: ApiException) {

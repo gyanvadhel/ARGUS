@@ -68,6 +68,9 @@ fun SettingsScreen(container: AppContainer, go: (String) -> Unit) {
         Section("Calls") {
             CallWarningsBody(container, signedIn = session != null)
         }
+        Section("Site protection") {
+            BlockerSectionBody(container)
+        }
         Section("Family") {
             Text("Invite the people you look out for.", color = ArgusColors.MutedText)
             ArgusOutlinedButton("Family", onClick = { go(Routes.FAMILY) }, modifier = Modifier.fillMaxWidth())

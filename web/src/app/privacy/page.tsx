@@ -95,18 +95,28 @@ export default function PrivacyPage() {
         </p>
         <p>
           Call warnings are off until you switch them on. Then Android shows Argus the number of each incoming call from
-          someone who isn&apos;t in your contacts, and only the number: Argus never hears or records a call. The number
-          is sent to Argus to be checked, and the answer is kept for 24 hours so the next person that number calls gets
-          it faster; no account is attached to that shared answer. A call that looks risky is saved to your history,
-          and a high-risk one tells your family circle, as with your other checks. Once a day the app downloads the list
-          of numbers Argus users have reported, so a known scam number is recognised straight away. Tapping
-          &ldquo;Not scam&rdquo; stays on your phone. Tapping &ldquo;Scam&rdquo; sends only the number, as a report from
-          your account.
+          someone who isn&apos;t in your contacts, and only the number: Argus never hears or records a call. When an unknown
+          number calls, the SIM country may be sent to interpret the number format. The number is sent to Argus to be
+          checked, and the answer is kept for 24 hours so the next person that number calls gets it faster; no account is
+          attached to that shared answer. A call that looks risky is saved to your history, and a high-risk one tells your
+          family circle, as with your other checks. Once a day the app downloads the list of numbers Argus users have
+          reported, so a known scam number is recognised straight away. Tapping &ldquo;Not scam&rdquo; stays on your
+          phone. Tapping &ldquo;Scam&rdquo; sends only the number, as a report from your account.
         </p>
         <p>
-          Family invites: a link works once and expires after 7 days, and only a scrambled (hashed) form of it is
-          stored. When someone joins, you both see each other&apos;s name in the app. Either of you can remove the link
-          at any time.
+          The scam-site blocker is off until you switch it on. It checks hostnames on your phone against a downloaded list
+          of known phishing and malware sites. The local VPN interface routes only DNS queries into the app; your normal
+          browsing traffic never enters the app, and nothing about your browsing or the sites you visit ever leaves your
+          phone.
+        </p>
+        <p>
+          Family circle: a link works once and expires after 7 days, and only a scrambled (hashed) form of it is
+          stored. When someone joins, you both see each other&apos;s name in the app, along with each member&apos;s
+          device protection status (which protections are enabled, app version, and when the phone last checked in).
+          Either of you can remove the link at any time. When a family member gets a high-risk warning, turns off a
+          protection, or hasn&apos;t checked in for 48 hours, Argus notifies their circle via push notifications sent
+          through Google Firebase Cloud Messaging (FCM). Push alerts say what kind of risk and how severe, never what a
+          message or email said, and never a blocked site&apos;s name; calls may include the scammer&apos;s number.
         </p>
       </Section>
       <Section title="Gmail">
@@ -136,9 +146,9 @@ export default function PrivacyPage() {
           Supabase stores accounts and history. Vercel hosts the website and counts visits without cookies (Vercel
           Analytics). Render runs the scanning engine. Argus also asks VirusTotal, Google Safe Browsing, abuse.ch
           (URLhaus and MalwareBazaar), AlienVault OTX, AbuseIPDB, crt.sh, IPQualityScore (for phone numbers), Have I
-          Been Pwned (for password checks), Google (for Gmail and Google sign-in), Telegram (for family alerts), the
-          FCC&apos;s open data, and public threat lists (OpenPhish, Phishing.Database) as described above. jsDelivr
-          serves the screenshot reader.
+          Been Pwned (for password checks), Google (for Gmail, Google sign-in, and Firebase Cloud Messaging push
+          notifications), Telegram (for family alerts), the FCC&apos;s open data, and public threat lists (OpenPhish,
+          Phishing.Database) as described above. jsDelivr serves the screenshot reader.
         </p>
       </Section>
 

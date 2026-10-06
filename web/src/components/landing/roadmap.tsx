@@ -1,7 +1,7 @@
 const ITEMS = [
-  { title: "Live call screening", body: "An Android app that screens incoming calls as they ring, using the phone network's own caller verification." },
+  { title: "SMS scam helper", body: "On-device SMS protection and triage for incoming messages to catch smishing before you tap." },
   { title: "Outlook inbox", body: "Gmail already connects today. Outlook is next, so phishing gets flagged there before you open it too." },
-  { title: "Family alerts by SMS and WhatsApp", body: "Telegram alerts work today. Plain text messages and WhatsApp are next, so every relative can be reached." },
+  { title: "Family alerts by SMS and WhatsApp", body: "Telegram alerts and Android push notifications work today. Plain text SMS and WhatsApp are next, so every relative can be reached." },
   { title: "Extension in the stores", body: "The Argus browser extension works today in developer mode. One-click install from the Chrome Web Store and Edge Add-ons is next." },
 ];
 

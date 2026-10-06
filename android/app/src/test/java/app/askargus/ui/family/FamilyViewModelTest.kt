@@ -41,8 +41,11 @@ class FamilyViewModelTest {
 
     @Test fun loadsMembers() {
         server.enqueue(MockResponse().setBody("""{"members":[{"linkId":"l1","name":"Asha Rao","joinedAt":"2026-09-30T10:00:00Z"}]}"""))
+        server.enqueue(MockResponse().setBody("""{"members":[{"memberId":"u2","memberName":"Asha Rao","deviceId":"d1","deviceName":"Pixel 8","appVersion":"0.2.0","protections":{"calls":true,"blocker":true},"lastSeenAt":"2026-10-06T12:00:00Z"}]}"""))
         vm.load()
-        assertEquals("Asha Rao", loaded().members.single().name)
+        val state = loaded()
+        assertEquals("Asha Rao", state.members.single().name)
+        assertEquals("Pixel 8", state.statusList.single().deviceName)
     }
 
     @Test fun signedOutPeopleAreAskedToSignIn() {
