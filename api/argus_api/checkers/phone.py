@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 
 import phonenumbers
 from phonenumbers import PhoneNumber, PhoneNumberFormat, PhoneNumberType, carrier, geocoder
@@ -93,6 +94,42 @@ def _parse_with_reason(raw: str) -> tuple[PhoneNumber | None, str | None]:
     return None, reasons.get(result, "it isn't a dialable number")
 
 
+_IN_SERIES = (
+    (re.compile(r"140\d{7}"), "140", "Registered telemarketer (promotional call)"),
+    (re.compile(r"1600\d{6}"), "1600", "Registered bank/finance service line"),
+)
+
+
+def india_series(raw: str) -> tuple[str, str] | None:
+    """India's 140 (telemarketers) and 1600 (banks/finance) lines. libphonenumber may not know them, so they are
+    recognised on the digits before the validity check. Without +91 they only count when the default region is IN."""
+    text = raw.strip()
+    digits = re.sub(r"\D", "", text)
+    if text.startswith("+") or digits.startswith("00"):
+        digits = digits.removeprefix("00")
+        if not digits.startswith("91"):
+            return None
+        digits = digits[2:]
+    elif _region() == "IN":
+        if len(digits) > 10:
+            digits = digits.removeprefix("0").removeprefix("91")
+    else:
+        return None
+    for pattern, prefix, label in _IN_SERIES:
+        if pattern.fullmatch(digits):
+            return prefix, label
+    return None
+
+
+def series_signal(raw: str) -> Signal | None:
+    hit = india_series(raw)
+    if hit is None:
+        return None
+    prefix, label = hit
+    return Signal(source="India number series", status="clean", score=0, weight=1.0, summary=label,
+                  evidence={"series": prefix, "threat_type": "None"})
+
+
 def _parse(raw: str) -> PhoneNumber | None:
     return _parse_with_reason(raw)[0]
 
@@ -137,11 +174,6 @@ def validity_signal(parsed: PhoneNumber | None, reason: str | None = None) -> Si
                       summary="Premium-rate number: calling back can cost you money",
                       evidence={**evidence, "threat_type": "Premium-rate fraud"})
     place = "" if region in ("Toll-free", "Unknown location") else f" from {region}"
-    if parsed.country_code == 91 and number_type in (PhoneNumberType.MOBILE, PhoneNumberType.FIXED_LINE, PhoneNumberType.FIXED_LINE_OR_MOBILE):
-        evidence["trai_advisory"] = (
-            "Under TRAI & RBI regulations, legitimate banks and lenders call from official 1600 or 140 series, "
-            "never personal 10-digit mobile numbers."
-        )
     return Signal(source=source, status="clean", score=0, weight=1.0,
                   summary=f"Valid {line} number{place}", evidence=evidence)
 
@@ -223,7 +255,7 @@ def _local_signals(raw: str, c: Community) -> tuple[PhoneNumber | None, str, lis
     parsed, reason = _parse_with_reason(raw)
     e164 = phonenumbers.format_number(parsed, PhoneNumberFormat.E164) if parsed else None
     signals = [
-        validity_signal(parsed, reason),
+        series_signal(raw) or validity_signal(parsed, reason),
         callback_risk_signal(parsed),
         blocklist_signal(e164),
         community_signal(c),

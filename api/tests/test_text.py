@@ -62,3 +62,25 @@ async def test_a_famous_link_does_not_vouch_for_a_scam_text(live_feeds, web):
     v = await check_text("URGENT: your account has been suspended. Verify your password at https://www.google.com/ "
                          "or you will be arrested.")
     assert v.verified is False and v.score >= 60
+
+
+from argus_api.checkers.text import bank_mobile_signal
+
+
+def test_bank_asking_you_to_call_a_mobile_is_flagged():
+    s = bank_mobile_signal("Dear customer your SBI account KYC is pending. Call 9876543210 now to avoid blocking.")
+    assert s is not None and s.status == "suspicious"
+    assert "personal mobile" in s.summary
+
+
+async def test_bank_mobile_rule_reaches_the_text_verdict():
+    v = await check_text("Dear customer your SBI account KYC is pending. Call 9876543210 now to avoid blocking.")
+    assert any(s.source == "Bank call-back rule" for s in v.signals)
+
+
+def test_bank_text_with_a_1600_line_is_not_flagged():
+    assert bank_mobile_signal("Your HDFC account statement is ready. Call 1600 202 6161 for help.") is None
+
+
+def test_chat_with_a_mobile_number_is_not_flagged():
+    assert bank_mobile_signal("Call me on 9876543210 when you reach") is None

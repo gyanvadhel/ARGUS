@@ -107,3 +107,31 @@ def test_american_style_numbers_still_read_as_american_with_another_home(monkeyp
     monkeypatch.setenv("ARGUS_DEFAULT_REGION", "IN")
     assert normalize("1-877-556-9255") == "+18775569255"
     assert check_phone("1-877-556-9255").subject == "+18775569255"
+
+
+from argus_api.checkers.phone import india_series
+
+
+def test_140_series_is_a_registered_telemarketer_not_a_fake_number():
+    v = check_phone("+91 1409876543")
+    assert not any("Not a real phone number" in s.summary for s in v.signals)
+    s = next(s for s in v.signals if s.source == "India number series")
+    assert s.summary == "Registered telemarketer (promotional call)"
+    assert s.status == "clean"
+
+
+def test_1600_series_is_a_registered_bank_line():
+    v = check_phone("+91 1600123456")
+    s = next(s for s in v.signals if s.source == "India number series")
+    assert s.summary == "Registered bank/finance service line"
+
+
+def test_ordinary_indian_mobile_is_not_a_series_and_has_no_generic_advisory():
+    assert india_series("+91 98765 43210") is None
+    v = check_phone("+91 98765 43210")
+    validity = next(s for s in v.signals if s.source == "Number validation")
+    assert "trai_advisory" not in validity.evidence
+
+
+def test_us_number_starting_1600_is_not_an_indian_series():
+    assert india_series("+1 600 555 0100") is None

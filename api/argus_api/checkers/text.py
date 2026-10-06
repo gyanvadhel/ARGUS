@@ -120,6 +120,26 @@ def intel_signal(text: str) -> Signal:
     )
 
 
+_BANKISH = re.compile(r"\b(kyc|your (?:bank )?account|a/c|sbi|hdfc|icici|axis bank|pnb|kotak|bank of baroda|rbi)\b", re.I)
+_CALL_ASK = re.compile(r"\b(call|contact|dial|ring)\b", re.I)
+
+
+def bank_mobile_signal(text: str) -> Signal | None:
+    """A message that sounds like a bank and asks you to call an ordinary Indian mobile is a classic scam."""
+    if not (_BANKISH.search(text) and _CALL_ASK.search(text)):
+        return None
+    for raw in _PHONE_IN_TEXT.findall(text):
+        try:
+            parsed = phonenumbers.parse(raw, "IN")
+        except phonenumbers.NumberParseException:
+            continue
+        if parsed.country_code == 91 and phonenumbers.number_type(parsed) == phonenumbers.PhoneNumberType.MOBILE:
+            return Signal(source="Bank call-back rule", status="suspicious", score=60, weight=1.0,
+                          summary="Banks don't ask you to call a personal mobile number",
+                          evidence={"threat_type": "Bank impersonation"})
+    return None
+
+
 def local_text_signals(text: str) -> list[Signal]:
     return [ml_signal(text), rules_signal(text), intel_signal(text)]
 
@@ -128,6 +148,8 @@ async def check_text(text: str) -> Verdict:
     urls = unique_hosts(extract_urls(text))
     phones, verdicts = await asyncio.gather(phone_signals(text), asyncio.gather(*(check_url(u) for u in urls)))
     signals = local_text_signals(text) + phones
+    if (bank := bank_mobile_signal(text)) is not None:
+        signals.append(bank)
     signals += [verdict_as_signal(v, f"Link: {host_of(v.subject)}") for v in verdicts]
     # A message vouched for by its links: every one goes to a verified site, and nothing else looks off.
     if verdicts and all(v.verified for v in verdicts) and not any(s.status in ("suspicious", "malicious") for s in signals):
