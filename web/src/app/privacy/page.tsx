@@ -94,6 +94,16 @@ export default function PrivacyPage() {
           in twice. Once a day the app checks the download page for a newer version.
         </p>
         <p>
+          Call warnings are off until you switch them on. Then Android shows Argus the number of each incoming call from
+          someone who isn&apos;t in your contacts, and only the number: Argus never hears or records a call. The number
+          is sent to Argus to be checked, and the answer is kept for 24 hours so the next person that number calls gets
+          it faster; no account is attached to that shared answer. A call that looks risky is saved to your history,
+          and a high-risk one tells your family circle, as with your other checks. Once a day the app downloads the list
+          of numbers Argus users have reported, so a known scam number is recognised straight away. Tapping
+          &ldquo;Not scam&rdquo; stays on your phone. Tapping &ldquo;Scam&rdquo; sends only the number, as a report from
+          your account.
+        </p>
+        <p>
           Family invites: a link works once and expires after 7 days, and only a scrambled (hashed) form of it is
           stored. When someone joins, you both see each other&apos;s name in the app. Either of you can remove the link
           at any time.

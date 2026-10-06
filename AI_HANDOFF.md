@@ -503,6 +503,7 @@ Android (`android/`)
 - `/api/app/handoff` – builds one-time sign-in URL for Trusted Web Activity
 - `/api/app/latest` – fetches newest release metadata from GitHub releases
 - `/api/app/family/*` – invite creation/validation, family list management
+- `/api/app/phone`, `/api/app/scam-numbers`, `/api/app/report` – call warnings (see below)
 Daily caps (`lib/rate-limit.ts`) apply per account via Supabase JWT claims.
 
 **Handoff:** `SUPABASE_SECRET_KEY` (Vercel, Sensitive) is used to sign handoff tokens. When the app opens a website page, it exchanges a one-time code (via `/api/app/handoff`) for the user's Supabase session, avoiding double sign-in.
@@ -520,7 +521,18 @@ Daily caps (`lib/rate-limit.ts`) apply per account via Supabase JWT claims.
 
 **Device scripts:** The git-ignored scripts in `.superpowers\e2e\android_*.py` (driven by `adbui.py`) install the APK, grant notification permissions, and run Task-specific flows.
 
-**Next:** Phase 2 adds call warnings (see `docs/superpowers/specs/2026-09-30-android-app-design.md`).
+**Call warnings (Phase 2, Android 10+):** `app/src/main/java/app/askargus/calls/`. `ArgusCallScreeningService` holds the
+`ROLE_CALL_SCREENING` role (Android only shows it callers not in contacts). It answers Android at once and never blocks a
+call; with "Silence likely scam calls" on it silences only numbers already on the phone's scam list. Then
+`CallChecker` decides: hidden number or "Not scam" → nothing; on the daily list (`ScamListWorker`,
+`/api/app/scam-numbers`) or checked in the last 7 days → answer from the phone; otherwise one `/api/app/phone?call=1`
+lookup with a 3 s budget (failure or timeout says nothing). Score ≥ 80 → heads-up "Likely scam call", 60–79 →
+"Suspicious number calling", below 60 → Activity only. A repeat ring within 2 min doesn't warn again. Buttons: "Not
+scam" (on the phone only) and "Scam" (`/api/app/report`, clears the shared cache). Server side, `lib/phone-lookup.ts`
+uses the shared 24-hour cache (`phone_verdicts`, migration `20261006000000_phone_verdict_cache.sql`), saves risky
+calls to history as kind `call` and alerts family at ≥ 80.
+
+**Next:** Phase 3, the scam-site blocker (see `docs/superpowers/specs/2026-09-30-android-app-design.md`).
 
 ## 7. Browser extension (`extension/`)
 

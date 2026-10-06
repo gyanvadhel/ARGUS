@@ -37,6 +37,10 @@ export default async function AppPage() {
         Check links, messages, phone numbers, QR codes and screenshots for scams, right from your phone. Share anything
         to Argus from another app. Free, and it never says &ldquo;Safe&rdquo; without proof.
       </p>
+      <p className="mt-4 leading-relaxed text-foreground/85">
+        Turn on call warnings and Argus warns you while an unknown number is calling, if it looks like a scam (Android
+        10 or newer).
+      </p>
 
       {release ? (
         <div className="mt-10">
@@ -72,7 +76,7 @@ export default async function AppPage() {
       <section className="mt-14">
         <h2 className="font-serif text-2xl">Coming next</h2>
         <p className="mt-3 leading-relaxed text-foreground/80">
-          Warnings while a scam call rings, a scam-site blocker for every app and family alerts on your phone.
+          A scam-site blocker for every app and family alerts on your phone.
           The app tells you when an update is ready.
         </p>
       </section>
