@@ -4,18 +4,19 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import app.askargus.ArgusApp
 import app.askargus.MainActivity
-import app.askargus.R
 import app.askargus.data.ActivityEvent
+import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.FileInputStream
@@ -23,7 +24,6 @@ import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import java.nio.ByteBuffer
 
 /**
  * DNS-only VPN that blocks known scam/phishing sites.
@@ -50,7 +50,21 @@ class ArgusVpnService : VpnService() {
     }
 
     private var tunnel: ParcelFileDescriptor? = null
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var serviceJob: CompletableJob? = null
+    private var serviceScope: CoroutineScope? = null
+
+    private fun ensureScope(): CoroutineScope {
+        val existing = serviceScope
+        val job = serviceJob
+        if (existing != null && job != null && job.isActive) {
+            return existing
+        }
+        val newJob = SupervisorJob()
+        val newScope = CoroutineScope(newJob + Dispatchers.IO)
+        serviceJob = newJob
+        serviceScope = newScope
+        return newScope
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
@@ -59,6 +73,7 @@ class ArgusVpnService : VpnService() {
         }
         if (running) return START_STICKY
 
+        val scope = ensureScope()
         val app = applicationContext as? ArgusApp
         app?.container?.let { container ->
             scope.launch {
@@ -108,7 +123,17 @@ class ArgusVpnService : VpnService() {
             stop()
             return
         }
+
+        // Direct underlying networks so physical traffic is never confused by the VPN
+        val physical = getPhysicalNetwork()
+        if (physical != null) {
+            setUnderlyingNetworks(arrayOf(physical))
+        } else {
+            setUnderlyingNetworks(null)
+        }
+
         running = true
+        val scope = ensureScope()
         scope.launch { dnsLoop() }
     }
 
@@ -126,6 +151,7 @@ class ArgusVpnService : VpnService() {
                     continue
                 }
                 val packet = buffer.copyOf(len)
+                val scope = ensureScope()
                 scope.launch { handlePacket(packet, output) }
             }
         } catch (e: Exception) {
@@ -135,26 +161,47 @@ class ArgusVpnService : VpnService() {
 
     private suspend fun handlePacket(ipPacket: ByteArray, output: FileOutputStream) {
         try {
-            // Parse IP header to get the DNS payload
+            if (ipPacket.isEmpty()) return
             val ipVersion = (ipPacket[0].toInt() shr 4) and 0xF
+            if (ipVersion != 4 && ipVersion != 6) return
+
+            // Check if this is a TCP attempt (e.g. DoT probe on port 853 or TCP DNS on port 53)
+            val proto = if (ipVersion == 4) {
+                if (ipPacket.size > 9) ipPacket[9].toInt() and 0xFF else 0
+            } else {
+                if (ipPacket.size > 6) ipPacket[6].toInt() and 0xFF else 0
+            }
+
+            if (proto == 6) { // TCP
+                val rstPacket = DnsPacket.buildTcpRst(ipPacket, ipVersion)
+                if (rstPacket != null) {
+                    synchronized(output) {
+                        output.write(rstPacket)
+                    }
+                }
+                return
+            }
+
+            if (proto != 17) return // ignore non-UDP/non-TCP
+
             val (dnsPayload, ipHeaderLen, transportHeaderLen, srcPort) = when (ipVersion) {
                 4 -> parseIpv4Udp(ipPacket) ?: return
                 6 -> parseIpv6Udp(ipPacket) ?: return
                 else -> return
             }
 
-            val name = DnsPacket.parseName(dnsPayload) ?: return
-
+            val name = DnsPacket.parseName(dnsPayload)
             val index = BlockerState.hostIndex
             val responsePayload: ByteArray
 
-            if (index.blocked(name) && !BlockerState.isAllowed(name)) {
+            if (name != null && index.blocked(name) && !BlockerState.isAllowed(name)) {
                 // Blocked — send NXDOMAIN
                 responsePayload = DnsPacket.nxdomain(dnsPayload)
                 BlockerState.recordBlock(name)
                 BlockerNotifications.blocked(this, name)
                 val app = applicationContext as? ArgusApp
                 app?.container?.let { container ->
+                    val scope = ensureScope()
                     scope.launch {
                         container.activity.add(
                             ActivityEvent(
@@ -171,12 +218,13 @@ class ArgusVpnService : VpnService() {
                     }
                 }
             } else {
-                // Forward to real DNS
-                responsePayload = forwardDns(dnsPayload) ?: return
+                // Forward to real DNS (or if unparsed query like PTR, forward it safely)
+                val rawResponse = forwardDns(dnsPayload) ?: return
+                responsePayload = DnsPacket.rewriteId(rawResponse, dnsPayload)
             }
 
-            // Build response IP packet
-            val responseIp = buildResponsePacket(
+            // Build response IP packet with RFC-compliant checksums
+            val responseIp = DnsPacket.buildResponsePacket(
                 ipPacket, ipVersion, ipHeaderLen, transportHeaderLen,
                 srcPort, responsePayload,
             )
@@ -198,15 +246,16 @@ class ArgusVpnService : VpnService() {
     private fun parseIpv4Udp(packet: ByteArray): UdpInfo? {
         if (packet.size < 28) return null
         val ihl = (packet[0].toInt() and 0x0F) * 4
+        if (ihl < 20 || packet.size < ihl + 8) return null
         val proto = packet[9].toInt() and 0xFF
         if (proto != 17) return null // not UDP
         val udpStart = ihl
-        if (packet.size < udpStart + 8) return null
         val srcPort = ((packet[udpStart].toInt() and 0xFF) shl 8) or (packet[udpStart + 1].toInt() and 0xFF)
         val udpLen = ((packet[udpStart + 4].toInt() and 0xFF) shl 8) or (packet[udpStart + 5].toInt() and 0xFF)
+        if (udpLen < 8 || packet.size < udpStart + udpLen) return null
         val dnsStart = udpStart + 8
-        if (packet.size < dnsStart + udpLen - 8) return null
-        return UdpInfo(packet.copyOfRange(dnsStart, dnsStart + udpLen - 8), ihl, 8, srcPort)
+        val payloadLen = udpLen - 8
+        return UdpInfo(packet.copyOfRange(dnsStart, dnsStart + payloadLen), ihl, 8, srcPort)
     }
 
     private fun parseIpv6Udp(packet: ByteArray): UdpInfo? {
@@ -214,110 +263,118 @@ class ArgusVpnService : VpnService() {
         val nextHeader = packet[6].toInt() and 0xFF
         if (nextHeader != 17) return null // not UDP
         val udpStart = 40
-        if (packet.size < udpStart + 8) return null
         val srcPort = ((packet[udpStart].toInt() and 0xFF) shl 8) or (packet[udpStart + 1].toInt() and 0xFF)
         val udpLen = ((packet[udpStart + 4].toInt() and 0xFF) shl 8) or (packet[udpStart + 5].toInt() and 0xFF)
+        if (udpLen < 8 || packet.size < udpStart + udpLen) return null
         val dnsStart = udpStart + 8
-        if (packet.size < dnsStart + udpLen - 8) return null
-        return UdpInfo(packet.copyOfRange(dnsStart, dnsStart + udpLen - 8), 40, 8, srcPort)
+        val payloadLen = udpLen - 8
+        return UdpInfo(packet.copyOfRange(dnsStart, dnsStart + payloadLen), 40, 8, srcPort)
     }
 
     private fun forwardDns(query: ByteArray): ByteArray? {
         val realDns = getRealDnsServers()
+        val physicalNetwork = getPhysicalNetwork()
+
         for (dns in realDns) {
             try {
-                val socket = DatagramSocket()
-                protect(socket)
-                socket.soTimeout = 5000
-                val addr = InetAddress.getByName(dns)
-                socket.send(DatagramPacket(query, query.size, addr, 53))
-                val buf = ByteArray(4096)
-                val resp = DatagramPacket(buf, buf.size)
-                socket.receive(resp)
-                socket.close()
-                return buf.copyOf(resp.length)
+                DatagramSocket().use { socket ->
+                    protect(socket)
+                    if (physicalNetwork != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                        try {
+                            physicalNetwork.bindSocket(socket)
+                        } catch (e: Exception) {
+                            Log.d(TAG, "bindSocket error: ${e.message}")
+                        }
+                    }
+                    socket.soTimeout = 1500
+                    val addr = InetAddress.getByName(dns)
+                    val sendPacket = DatagramPacket(query, query.size, addr, 53)
+                    socket.send(sendPacket)
+
+                    val buf = ByteArray(4096)
+                    val resp = DatagramPacket(buf, buf.size)
+                    socket.receive(resp)
+                    if (resp.length > 0) {
+                        return buf.copyOf(resp.length)
+                    }
+                }
             } catch (e: Exception) {
-                Log.w(TAG, "DNS forward to $dns failed", e)
+                Log.d(TAG, "DNS forward to $dns failed: ${e.message}")
             }
         }
         return null
     }
 
+    private fun getPhysicalNetwork(): Network? {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return null
+        val networks = cm.allNetworks
+        var cellularNet: Network? = null
+        for (net in networks) {
+            val caps = cm.getNetworkCapabilities(net) ?: continue
+            if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return net
+            }
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                cellularNet = net
+            }
+        }
+        return cellularNet
+    }
+
     private fun getRealDnsServers(): List<String> {
         val cm = getSystemService(ConnectivityManager::class.java)
-        val network = cm.activeNetwork
-        val lp = if (network != null) cm.getLinkProperties(network) else null
-        val servers = lp?.dnsServers?.map { it.hostAddress ?: "" }?.filter { it.isNotEmpty() }
-        return if (servers.isNullOrEmpty()) listOf("1.1.1.1", "1.0.0.1") else servers
-    }
+        val dnsList = LinkedHashSet<String>()
 
-    private fun buildResponsePacket(
-        originalPacket: ByteArray,
-        ipVersion: Int,
-        ipHeaderLen: Int,
-        transportHeaderLen: Int,
-        srcPort: Int,
-        dnsPayload: ByteArray,
-    ): ByteArray {
-        // Swap src/dst in IP header, swap ports in UDP, replace payload
-        val udpLen = transportHeaderLen + dnsPayload.size
-        val totalLen = ipHeaderLen + udpLen
-        val result = ByteArray(totalLen)
+        if (cm != null) {
+            try {
+                val networks = cm.allNetworks
+                for (network in networks) {
+                    val caps = cm.getNetworkCapabilities(network) ?: continue
+                    if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue
+                    if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
 
-        // Copy IP header
-        System.arraycopy(originalPacket, 0, result, 0, ipHeaderLen)
-
-        if (ipVersion == 4) {
-            // Swap src/dst IP addresses (offsets 12-15 and 16-19)
-            System.arraycopy(originalPacket, 12, result, 16, 4)
-            System.arraycopy(originalPacket, 16, result, 12, 4)
-            // Update total length
-            result[2] = ((totalLen shr 8) and 0xFF).toByte()
-            result[3] = (totalLen and 0xFF).toByte()
-            // Clear checksum, recalculate
-            result[10] = 0; result[11] = 0
-            val cksum = ipv4Checksum(result, ipHeaderLen)
-            result[10] = ((cksum shr 8) and 0xFF).toByte()
-            result[11] = (cksum and 0xFF).toByte()
-        } else {
-            // IPv6: swap src/dst (offsets 8-23 and 24-39)
-            System.arraycopy(originalPacket, 8, result, 24, 16)
-            System.arraycopy(originalPacket, 24, result, 8, 16)
-            // Update payload length
-            val payloadLen = udpLen
-            result[4] = ((payloadLen shr 8) and 0xFF).toByte()
-            result[5] = (payloadLen and 0xFF).toByte()
+                    val lp = cm.getLinkProperties(network) ?: continue
+                    for (inetAddr in lp.dnsServers) {
+                        val host = inetAddr.hostAddress ?: continue
+                        if (isValidUpstreamDns(host)) {
+                            dnsList.add(host)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error enumerating physical network DNS", e)
+            }
         }
 
-        // Build UDP header: swap ports
-        val udpStart = ipHeaderLen
-        // dst port becomes src port (53), src port becomes dst port
-        result[udpStart] = 0; result[udpStart + 1] = 53 // src = 53
-        result[udpStart + 2] = ((srcPort shr 8) and 0xFF).toByte()
-        result[udpStart + 3] = (srcPort and 0xFF).toByte()
-        result[udpStart + 4] = ((udpLen shr 8) and 0xFF).toByte()
-        result[udpStart + 5] = (udpLen and 0xFF).toByte()
-        result[udpStart + 6] = 0; result[udpStart + 7] = 0 // checksum = 0 (optional for UDP over IPv4)
+        // Fast public DNS fallbacks
+        dnsList.add("1.1.1.1")
+        dnsList.add("8.8.8.8")
+        dnsList.add("1.0.0.1")
+        dnsList.add("8.8.4.4")
 
-        // Copy DNS payload
-        System.arraycopy(dnsPayload, 0, result, udpStart + 8, dnsPayload.size)
-        return result
+        return dnsList.toList()
     }
 
-    private fun ipv4Checksum(header: ByteArray, length: Int): Int {
-        var sum = 0
-        for (i in 0 until length step 2) {
-            val word = ((header[i].toInt() and 0xFF) shl 8) or
-                    (if (i + 1 < length) header[i + 1].toInt() and 0xFF else 0)
-            sum += word
-        }
-        while (sum shr 16 != 0) sum = (sum and 0xFFFF) + (sum shr 16)
-        return sum.inv() and 0xFFFF
+    private fun isValidUpstreamDns(ip: String): Boolean {
+        if (ip.isBlank()) return false
+        // Exclude fake DNS and tunnel interface addresses to prevent loops
+        if (ip == FAKE_DNS4 || ip == FAKE_DNS6 || ip == "10.111.222.1" || ip == "fd00:a7:5::1") return false
+        if (ip.startsWith("10.111.222.")) return false
+        if (ip.startsWith("fd00:a7:5:")) return false
+        // Exclude loopback
+        if (ip.startsWith("127.") || ip == "::1") return false
+        // Exclude IPv6 link-local
+        if (ip.startsWith("fe80:", ignoreCase = true)) return false
+        return true
     }
 
     private fun stop() {
         running = false
-        scope.cancel()
+        serviceJob?.cancel()
+        serviceJob = null
+        serviceScope = null
         tunnel?.close()
         tunnel = null
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -327,7 +384,9 @@ class ArgusVpnService : VpnService() {
     override fun onRevoke() {
         super.onRevoke()
         running = false
-        scope.cancel()
+        serviceJob?.cancel()
+        serviceJob = null
+        serviceScope = null
         tunnel?.close()
         tunnel = null
         val app = applicationContext as? ArgusApp
