@@ -533,7 +533,7 @@ uses the shared 24-hour cache (`phone_verdicts`, migration `20261006000000_phone
 calls to history as kind `call` and alerts family at ≥ 80. Engine (`api/argus_api/checkers/phone.py`, text rules):
 India's 140/1600 series and the bank-asks-you-to-call-a-mobile text rule.
 
-**Next:** Phase 3, the scam-site blocker (see `docs/superpowers/specs/2026-09-30-android-app-design.md`).
+**Next:** releasing 0.2.0, then Phase 3 (scam-site blocker) and Phase 6 (family circle). What and how: `docs/NEXT_PHASES.md`.
 
 ## 7. Browser extension (`extension/`)
 
