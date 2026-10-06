@@ -13,8 +13,9 @@ sealed interface CallOutcome {
 }
 
 /** Decides what an incoming call deserves: the phone's own memory first, then one lookup within a short budget.
- *  A lookup that fails or runs out of time says nothing at all: never a made-up "safe". */
-class CallChecker(private val memory: CallMemory, private val lookup: PhoneLookup, private val budgetMs: Long = 3_000) {
+ *  A lookup that fails or runs out of time says nothing at all: never a made-up "safe". The wait is long enough for
+ *  the free engine to wake up; an answer that comes after the call is worded in the past tense. */
+class CallChecker(private val memory: CallMemory, private val lookup: PhoneLookup, private val budgetMs: Long = 90_000) {
     suspend fun check(number: String, country: String?, callActive: () -> Boolean): CallOutcome {
         if (CallPolicy.isHidden(number)) return CallOutcome.Skip
         if (memory.isNotScam(number)) return CallOutcome.Skip

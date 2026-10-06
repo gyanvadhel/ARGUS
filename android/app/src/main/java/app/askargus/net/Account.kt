@@ -13,6 +13,9 @@ class Account(
 
     suspend fun restore(): Session? = sessions.load()
 
+    /** Reads the saved session if nothing has yet, so a call or a background job that started the app cold sees it. */
+    suspend fun signedIn(): Boolean = restore() != null
+
     suspend fun signIn(email: String, password: String) = sessions.save(auth.signInWithPassword(email.trim(), password))
 
     suspend fun signUp(name: String, email: String, password: String): SignUpResult {

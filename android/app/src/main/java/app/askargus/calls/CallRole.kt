@@ -9,11 +9,12 @@ import kotlinx.coroutines.flow.first
 
 /** Android 10's call-screening role: what Argus needs before it can warn about calls. */
 object CallRole {
-    enum class State { NEEDS_SIGN_IN, UNSUPPORTED, OFF, ON }
+    enum class State { NEEDS_SIGN_IN, UNSUPPORTED, OFF, NEEDS_NOTIFICATIONS, ON }
 
-    fun state(sdk: Int, signedIn: Boolean, switchOn: Boolean, holdsRole: Boolean) = when {
+    fun state(sdk: Int, signedIn: Boolean, switchOn: Boolean, holdsRole: Boolean, notificationsAllowed: Boolean = true) = when {
         sdk < 29 -> State.UNSUPPORTED
         !signedIn -> State.NEEDS_SIGN_IN
+        switchOn && holdsRole && !notificationsAllowed -> State.NEEDS_NOTIFICATIONS
         switchOn && holdsRole -> State.ON
         else -> State.OFF
     }

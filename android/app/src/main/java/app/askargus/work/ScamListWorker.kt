@@ -23,7 +23,7 @@ class ScamListWorker(context: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         val c = (applicationContext as ArgusApp).container
         CallRole.reconcile(applicationContext, c)
-        if (c.account.session.value == null) return Result.success()
+        if (!c.account.signedIn()) return Result.success()
         return try {
             c.callMemory.setKnown(c.api.scamNumbers().associate { it.number to it.label })
             Result.success()

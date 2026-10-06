@@ -25,26 +25,29 @@ class ArgusCallScreeningService : CallScreeningService() {
 
     override fun onScreenCall(details: Call.Details) {
         val container = (applicationContext as ArgusApp).container
-        val number = details.handle?.schemeSpecificPart
+        val raw = details.handle?.schemeSpecificPart
         val incoming = details.callDirection == Call.Details.DIRECTION_INCOMING
+        val country = getSystemService(TelephonyManager::class.java)?.simCountryIso?.uppercase()?.ifBlank { null }
+        // The same "+number" as the scam list, the server and "Not scam" use; null when it can't be read for sure.
+        val number = raw?.takeUnless { CallPolicy.isHidden(it) }?.let { CallPolicy.e164(it, country) }
         // Reads only the phone's own list, so it's instant.
         val silenceNow = incoming && runBlocking { silenceKnown(container, number) }
         respondToCall(details, CallResponse.Builder().setDisallowCall(false).setRejectCall(false).setSilenceCall(silenceNow).build())
-        if (!incoming || number == null || CallPolicy.isHidden(number)) return
-        scope.launch { runCatching { check(container, number) } }
+        if (!incoming || number == null) return
+        scope.launch { runCatching { check(container, number, country) } }
     }
 
     private suspend fun silenceKnown(c: AppContainer, number: String?): Boolean {
-        if (number == null || CallPolicy.isHidden(number)) return false
-        if (!c.prefs.callWarnings.first() || c.account.session.value == null) return false
+        if (number == null) return false
+        // signedIn() reads the saved session: after a reboot this call may be what started the app.
+        if (!c.prefs.callWarnings.first() || !c.account.signedIn()) return false
         val known = c.callMemory.knownScamLabel(number) != null && !c.callMemory.isNotScam(number)
         return CallPolicy.silences(CallLevel.LIKELY_SCAM, known, c.prefs.silenceCalls.first())
     }
 
-    private suspend fun check(c: AppContainer, number: String) {
-        if (!c.prefs.callWarnings.first() || c.account.session.value == null) return
+    private suspend fun check(c: AppContainer, number: String, country: String?) {
+        if (!c.prefs.callWarnings.first() || !c.account.signedIn()) return
         if (!c.callMemory.shouldWarn(number)) return
-        val country = getSystemService(TelephonyManager::class.java)?.simCountryIso?.uppercase()?.ifBlank { null }
         val started = System.currentTimeMillis()
         // The service can't see the hang-up, so an answer that comes more than 20 s after the ring is worded in the
         // past tense.

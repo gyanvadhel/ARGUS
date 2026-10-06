@@ -31,4 +31,19 @@ class CallPolicyTest {
         assertFalse(CallPolicy.silences(CallLevel.SUSPICIOUS, known = true, silenceOn = true))
         assertFalse(CallPolicy.silences(CallLevel.LIKELY_SCAM, known = true, silenceOn = false))
     }
+
+    @Test fun dialerNumbersBecomeInternational() {
+        assertEquals("+919876543210", CallPolicy.e164("+91 98765 43210", "IN"))
+        assertEquals("+919876543210", CallPolicy.e164("09876543210", "IN"))
+        assertEquals("+919876543210", CallPolicy.e164("9876543210", "in"))
+        assertEquals("+919876543210", CallPolicy.e164("919876543210", "IN"))
+        assertEquals("+14155550123", CallPolicy.e164("(415) 555-0123", "US"))
+        assertEquals("+447700900123", CallPolicy.e164("00447700900123", null))
+    }
+
+    @Test fun unsureNumbersStayUnread() {
+        assertEquals(null, CallPolicy.e164("9876543210", null))
+        assertEquals(null, CallPolicy.e164("9876543210", "FR"))
+        assertEquals(null, CallPolicy.e164("+0123", "IN"))
+    }
 }

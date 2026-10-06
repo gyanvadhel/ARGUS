@@ -30,6 +30,13 @@ class AccountTest {
         assertEquals("a1", account.session.value!!.accessToken)
     }
 
+    @Test fun aFreshProcessIsSignedInFromTheSavedSession() = runTest {
+        val saved = ObservableSessionStore(MemorySessionStore(Session("a1", "r1", NOW + 3600, "u1")))
+        val cold = Account(SupabaseAuth(OkHttpClient(), server.url("/").toString(), "pk", now = { NOW }), saved, "https://askargus.app", onSignedOut = {})
+        assertNull(cold.session.value)
+        assertTrue(cold.signedIn())
+    }
+
     @Test fun signOutForgetsTheSessionEvenIfTheServerIsUnreachable() = runTest {
         server.enqueue(MockResponse().setBody(sessionJson("a1")))
         account.signIn("asha@example.com", "pw123456")

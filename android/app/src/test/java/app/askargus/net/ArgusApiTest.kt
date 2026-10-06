@@ -28,6 +28,13 @@ class ArgusApiTest {
         runCatching { server.shutdown() }
     }
 
+    @Test fun aSlowReplyStopsWhenTheCallerGivesUp() = kotlinx.coroutines.runBlocking {
+        server.enqueue(MockResponse().setBody("{}").setHeadersDelay(5, java.util.concurrent.TimeUnit.SECONDS))
+        val started = System.currentTimeMillis()
+        kotlinx.coroutines.withTimeoutOrNull(300) { api.phone("+911111111111", "IN", call = true) }
+        assertTrue(System.currentTimeMillis() - started < 2_000)
+    }
+
     @Test fun sendsTheAccessToken() = runTest {
         server.enqueue(MockResponse().setBody(scanJson))
         val r = api.scan("hi", "always")

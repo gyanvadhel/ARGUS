@@ -1,6 +1,9 @@
 package app.askargus.ui.settings
 
+import android.Manifest
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -21,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
 import app.askargus.AppContainer
 import app.askargus.calls.CallRole
 import app.askargus.ui.theme.ArgusColors
@@ -34,11 +38,25 @@ fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
     val switchOn by container.prefs.callWarnings.collectAsState(initial = false)
     val silence by container.prefs.silenceCalls.collectAsState(initial = false)
     var note by remember { mutableStateOf<String?>(null) }
+    // Android doesn't announce a change in notification permission, so it's re-read after every answer.
+    var notificationsAllowed by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationsAllowed = granted
+        if (!granted) note = "Without notifications Argus can't warn you about calls. You can allow them in Android's settings."
+    }
+    fun allowNotifications() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+        }
+    }
 
     fun turnOn() {
         scope.launch { container.prefs.setCallWarnings(true) }
         ScamListWorker.now(context)
         note = null
+        if (!notificationsAllowed) allowNotifications()
     }
 
     val askForRole = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -46,7 +64,7 @@ fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
         else note = "Android didn't give Argus the call-screening role, so warnings stay off."
     }
 
-    val state = CallRole.state(Build.VERSION.SDK_INT, signedIn, switchOn, CallRole.holds(context))
+    val state = CallRole.state(Build.VERSION.SDK_INT, signedIn, switchOn, CallRole.holds(context), notificationsAllowed)
     val explain = "Warns you while a scam number is calling. Only numbers that aren't in your contacts are checked, " +
         "and each new one is sent to Argus to look up."
     when (state) {
@@ -55,6 +73,11 @@ fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
         CallRole.State.OFF -> SwitchRow("Call warnings", explain, checked = false, enabled = true) {
             if (CallRole.holds(context)) turnOn() else CallRole.requestIntent(context)?.let { askForRole.launch(it) }
         }
+        CallRole.State.NEEDS_NOTIFICATIONS -> SwitchRow(
+            "Call warnings",
+            "Notifications are off for Argus, so it can't warn you. Tap to allow them.",
+            checked = false, enabled = true,
+        ) { allowNotifications() }
         CallRole.State.ON -> SwitchRow("Call warnings", explain, checked = true, enabled = true) {
             scope.launch { container.prefs.setCallWarnings(false) }
             note = "Argus has stopped checking calls. To take away its call-screening role as well, go to " +

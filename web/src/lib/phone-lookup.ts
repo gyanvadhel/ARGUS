@@ -5,18 +5,21 @@ import { SAVE_FLAGGED_AT } from "@/lib/app-scan";
 import { communityFor } from "@/lib/community-data";
 import { ALERT_AT, alertFamily } from "@/lib/family-alerts";
 import { levelMeta } from "@/lib/format";
+import { phoneCache, type PhoneCache } from "@/lib/phone-cache";
 import type { Community, Verdict } from "@/lib/types";
 
 export type LookupDeps = {
   community: (supabase: ServerSupabase, e164: string) => Promise<Community>;
   scan: (number: string, community: Community) => Promise<Verdict>;
   alert: typeof alertFamily;
+  cache: PhoneCache;
 };
 
 const LIVE: LookupDeps = {
   community: async (supabase, e164) => (await communityFor(supabase, e164)).community,
   scan: (number, community) => api.scan(number, community),
   alert: alertFamily,
+  cache: phoneCache,
 };
 
 export type LookupResult = { ok: true; verdict: Verdict; cached: boolean; id: string | null } | { ok: false; error: string };
@@ -28,8 +31,7 @@ export async function lookupPhone(
   q: { number: string; call: boolean },
   deps: LookupDeps = LIVE,
 ): Promise<LookupResult> {
-  const { data: hit } = await supabase.rpc("get_phone_verdict", { p_number: q.number });
-  let verdict = (hit as Verdict | null) ?? null;
+  let verdict = await deps.cache.get(q.number).catch(() => null);
   const cached = verdict !== null;
   if (!verdict) {
     try {
@@ -37,7 +39,7 @@ export async function lookupPhone(
     } catch {
       return { ok: false, error: "Argus's checker is waking up. Try again in a moment." };
     }
-    await supabase.rpc("put_phone_verdict", { p_number: q.number, p_verdict: verdict });
+    await deps.cache.put(q.number, verdict).catch(() => undefined);
   }
 
   let id: string | null = null;

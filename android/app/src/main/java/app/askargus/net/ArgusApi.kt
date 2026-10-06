@@ -2,10 +2,9 @@ package app.askargus.net
 
 import app.askargus.calls.PhoneLookup
 import app.askargus.core.Verdict
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -13,12 +12,17 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import java.io.IOException
 import java.net.URLEncoder
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class ApiException(message: String, val code: Int) : Exception(message)
 class SignedOutException : Exception("Sign in to use this.")
@@ -121,7 +125,8 @@ class ArgusApi(
 
     private class Reply(val code: Int, val text: String)
 
-    private suspend fun send(method: String, path: String, body: JsonObject?, token: String?): Reply = withContext(Dispatchers.IO) {
+    // Asynchronous, so a caller that stops waiting (a call warning out of time) also stops the request.
+    private suspend fun send(method: String, path: String, body: JsonObject?, token: String?): Reply {
         val payload = body?.toString()?.toRequestBody(JSON)
         val request = Request.Builder().url(base + path).apply {
             if (token != null) header("Authorization", "Bearer $token")
@@ -131,10 +136,24 @@ class ArgusApi(
                 else -> method(method, payload ?: "{}".toRequestBody(JSON))
             }
         }.build()
-        try {
-            http.newCall(request).execute().use { Reply(it.code, it.body?.string().orEmpty()) }
-        } catch (e: IOException) {
-            throw ApiException("Couldn't reach Argus. Check your connection.", 0)
+        val call = http.newCall(request)
+        return suspendCancellableCoroutine { cont ->
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    cont.resumeWithException(ApiException("Couldn't reach Argus. Check your connection.", 0))
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val reply = try {
+                        response.use { Reply(it.code, it.body?.string().orEmpty()) }
+                    } catch (e: IOException) {
+                        cont.resumeWithException(ApiException("Couldn't reach Argus. Check your connection.", 0))
+                        return
+                    }
+                    cont.resume(reply)
+                }
+            })
         }
     }
 

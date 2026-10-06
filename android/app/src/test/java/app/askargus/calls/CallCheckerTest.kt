@@ -74,6 +74,11 @@ class CallCheckerTest {
         assertTrue((out as CallOutcome.Warn).late)
     }
 
+    @Test fun wakingEngineStillWarnsLateInThePastTense() = runTest {
+        val out = CallChecker(memory(), FakeLookup(score = 90, delayMs = 40_000)).check("+911111111111", "IN") { false }
+        assertTrue((out as CallOutcome.Warn).late)
+    }
+
     @Test fun slowLookupTimesOutWithoutAVerdict() = runTest {
         val memory = memory()
         val out = CallChecker(memory, FakeLookup(score = 10, delayMs = 10_000), budgetMs = 50).check("+911111111111", "IN") { true }
