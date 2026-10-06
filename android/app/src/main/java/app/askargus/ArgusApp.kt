@@ -1,6 +1,7 @@
 package app.askargus
 
 import android.app.Application
+import app.askargus.calls.CallNotifications
 import app.askargus.work.Notifications
 import app.askargus.work.UpdateCheckWorker
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,7 @@ class ArgusApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         Notifications.createChannels(this)
+        CallNotifications.createChannels(this)
         UpdateCheckWorker.schedule(this)
         // The Activity timeline keeps 90 days.
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {

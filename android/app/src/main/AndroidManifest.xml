@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -38,5 +39,16 @@
                 <data android:scheme="https" android:host="askargus.app" android:pathPrefix="/app/join/" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".calls.ArgusCallScreeningService"
+            android:enabled="@bool/call_screening"
+            android:exported="true"
+            tools:targetApi="29"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+        <receiver android:name=".calls.CallActionReceiver" android:exported="false" />
     </application>
 </manifest>

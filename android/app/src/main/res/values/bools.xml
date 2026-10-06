@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Call warnings need Android 10's call-screening role. -->
+    <bool name="call_screening">false</bool>
+</resources>

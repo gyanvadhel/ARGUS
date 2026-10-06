@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.askargus.calls.KeyValueStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -19,6 +20,8 @@ class Prefs(private val context: Context) {
         val availableUpdate = stringPreferencesKey("available_update")
         val notifiedVersion = stringPreferencesKey("notified_version")
         val askedNotifications = booleanPreferencesKey("asked_notifications")
+        val callWarnings = booleanPreferencesKey("call_warnings")
+        val silenceCalls = booleanPreferencesKey("silence_calls")
     }
 
     private val data get() = context.argusPrefs.data
@@ -41,4 +44,18 @@ class Prefs(private val context: Context) {
 
     suspend fun askedNotifications(): Boolean = data.first()[K.askedNotifications] ?: false
     suspend fun setAskedNotifications() = context.argusPrefs.edit { it[K.askedNotifications] = true }
+
+    val callWarnings: Flow<Boolean> = data.map { it[K.callWarnings] ?: false }
+    suspend fun setCallWarnings(on: Boolean) = context.argusPrefs.edit { it[K.callWarnings] = on }
+
+    val silenceCalls: Flow<Boolean> = data.map { it[K.silenceCalls] ?: false }
+    suspend fun setSilenceCalls(on: Boolean) = context.argusPrefs.edit { it[K.silenceCalls] = on }
+
+    /** Plain string storage for what the phone remembers about callers. */
+    val store: KeyValueStore = object : KeyValueStore {
+        override suspend fun get(key: String) = data.first()[stringPreferencesKey(key)]
+        override suspend fun put(key: String, value: String) {
+            context.argusPrefs.edit { it[stringPreferencesKey(key)] = value }
+        }
+    }
 }

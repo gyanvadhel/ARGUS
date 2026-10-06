@@ -1,6 +1,8 @@
 package app.askargus
 
 import android.content.Context
+import app.askargus.calls.CallChecker
+import app.askargus.calls.CallMemory
 import app.askargus.data.ActivityDao
 import app.askargus.data.ActivityDb
 import app.askargus.data.Prefs
@@ -27,4 +29,6 @@ class AppContainer(context: Context) {
     val api = ArgusApi(http, BuildConfig.APP_URL, auth, sessions)
     val activity: ActivityDao by lazy { ActivityDb.get(context).dao() }
     val reader = ImageReader(context.applicationContext)
+    val callMemory = CallMemory(prefs.store)
+    val callChecker = CallChecker(callMemory, api)
 }
