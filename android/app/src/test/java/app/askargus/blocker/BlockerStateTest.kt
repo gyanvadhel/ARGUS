@@ -15,4 +15,14 @@ class BlockerStateTest {
         // Coming back to it later is a new visit.
         assertTrue(BlockerState.shouldReport("evil.example", now = 1_000 + 61_000))
     }
+
+    @Test fun anAllowedSiteCanBeBlockedAgain() {
+        BlockerState.setAllowed(emptyList())
+        BlockerState.allow("Evil.example.")
+        assertTrue(BlockerState.isAllowed("evil.example"))
+        assertTrue(BlockerState.isAllowed("login.evil.example"))
+        BlockerState.disallow("EVIL.example")
+        assertFalse(BlockerState.isAllowed("evil.example"))
+        assertFalse(BlockerState.isAllowed("login.evil.example"))
+    }
 }

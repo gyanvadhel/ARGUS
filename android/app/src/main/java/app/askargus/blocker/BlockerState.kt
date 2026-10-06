@@ -60,6 +60,10 @@ object BlockerState {
         allowedNames.add(name.lowercase().trimEnd('.'))
     }
 
+    fun disallow(name: String) {
+        allowedNames.remove(name.lowercase().trimEnd('.'))
+    }
+
     fun setAllowed(names: Collection<String>) {
         allowedNames.clear()
         allowedNames.addAll(names.map { it.lowercase().trimEnd('.') })

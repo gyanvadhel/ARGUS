@@ -1,6 +1,12 @@
 package app.askargus.ui.nav
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -68,14 +74,31 @@ fun ArgusNav(container: AppContainer, onboarded: Boolean, incoming: StateFlow<In
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val scope = rememberCoroutineScope()
-    val go: (String) -> Unit = { nav.navigate(it) }
-    val back: () -> Unit = { nav.popBackStack() }
     val tabs = listOf(
         Tab(Routes.HOME, "Home") { Icon(Icons.Default.Home, contentDescription = null) },
         Tab(Routes.ACTIVITY, "Activity") { Icon(Icons.Default.List, contentDescription = null) },
         Tab(Routes.ARGUS, "Argus") { Icon(painterResource(R.drawable.ic_notification), contentDescription = null) },
         Tab(Routes.SETTINGS, "Settings") { Icon(Icons.Default.Settings, contentDescription = null) },
     )
+    val tabRoutes = tabs.map { it.route }.toSet()
+    // Home is the root every tab sits on. Going Home just pops back to it; other tabs replace whatever is above Home
+    // and remember their own scroll position. A card on Home that opens a tab goes through here too, so it never
+    // ends up stacked on top of Home where the Home tab would bring it back.
+    val openTab: (String) -> Unit = { target ->
+        if (target == Routes.HOME) {
+            if (!nav.popBackStack(Routes.HOME, inclusive = false, saveState = true)) {
+                nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
+            }
+        } else {
+            nav.navigate(target) {
+                popUpTo(Routes.HOME) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+    val go: (String) -> Unit = { if (it in tabRoutes) openTab(it) else nav.navigate(it) }
+    val back: () -> Unit = { nav.popBackStack() }
     val finishOnboarding: () -> Unit = {
         scope.launch { container.prefs.setOnboarded() }
         nav.navigate(Routes.HOME) { popUpTo(0) { inclusive = true } }
@@ -100,18 +123,12 @@ fun ArgusNav(container: AppContainer, onboarded: Boolean, incoming: StateFlow<In
     Scaffold(
         containerColor = ArgusColors.Background,
         bottomBar = {
-            if (tabs.any { it.route == route }) {
+            AnimatedVisibility(route in tabRoutes, enter = fadeIn(tween(180)), exit = fadeOut(tween(120))) {
                 NavigationBar(containerColor = ArgusColors.Card) {
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = route == tab.route,
-                            onClick = {
-                                nav.navigate(tab.route) {
-                                    popUpTo(Routes.HOME) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { if (route != tab.route) openTab(tab.route) },
                             icon = tab.icon,
                             label = { Text(tab.label) },
                             colors = NavigationBarItemDefaults.colors(
@@ -127,7 +144,19 @@ fun ArgusNav(container: AppContainer, onboarded: Boolean, incoming: StateFlow<In
             }
         },
     ) { padding ->
-        NavHost(nav, startDestination = if (onboarded) Routes.HOME else Routes.WELCOME, modifier = Modifier.padding(padding)) {
+        NavHost(
+            nav,
+            startDestination = if (onboarded) Routes.HOME else Routes.WELCOME,
+            modifier = Modifier.padding(padding),
+            // Tabs cross-fade in place; screens opened from a tab rise in slightly and settle back when closed.
+            enterTransition = {
+                if (targetState.destination.route in tabRoutes && initialState.destination.route in tabRoutes) fadeIn(tween(200))
+                else fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 24 }
+            },
+            exitTransition = { fadeOut(tween(140)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(160)) + slideOutVertically(tween(220)) { it / 24 } },
+        ) {
             composable(Routes.WELCOME) { WelcomeScreen(onStart = { nav.navigate(Routes.signIn(back = false)) }) }
             composable(Routes.SIGN_IN, arguments = listOf(navArgument("back") { type = NavType.BoolType; defaultValue = false })) {
                 val returning = it.arguments?.getBoolean("back") ?: false

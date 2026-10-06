@@ -29,6 +29,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import app.askargus.AppContainer
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextOverflow
+import app.askargus.blocker.AllowList
 import app.askargus.blocker.ArgusVpnService
 import app.askargus.blocker.BlockerState
 import app.askargus.blocker.BlocklistWorker
@@ -37,16 +40,16 @@ import app.askargus.ui.components.ArgusOutlinedButton
 import app.askargus.ui.theme.ArgusColors
 import kotlinx.coroutines.launch
 
+/** The blocker's switch, shared by Home and Settings. Turning it on asks for Android's VPN permission the first time. */
+class BlockerToggle(val on: Boolean, val note: String?, val toggle: () -> Unit)
+
 @Composable
-fun BlockerSectionBody(container: AppContainer) {
+fun rememberBlockerToggle(container: AppContainer): BlockerToggle {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val blockerPref by container.prefs.blockerEnabled.collectAsState(initial = false)
-    val isRunning = ArgusVpnService.running
-    val isChecked = blockerPref && isRunning
-
+    val isChecked = blockerPref && ArgusVpnService.running
     var note by remember { mutableStateOf<String?>(null) }
-    var updating by remember { mutableStateOf(false) }
 
     fun startBlocker() {
         val intent = Intent(context, ArgusVpnService::class.java)
@@ -60,13 +63,31 @@ fun BlockerSectionBody(container: AppContainer) {
     }
 
     val askVpn = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        val prep = VpnService.prepare(context)
-        if (prep == null) {
-            startBlocker()
+        if (VpnService.prepare(context) == null) startBlocker()
+        else note = "VPN permission was not granted, so the scam-site blocker stays off."
+    }
+
+    return BlockerToggle(isChecked, note) {
+        if (isChecked) {
+            context.startService(Intent(context, ArgusVpnService::class.java).apply { action = ArgusVpnService.ACTION_STOP })
+            scope.launch {
+                container.prefs.setBlockerEnabled(false)
+                app.askargus.work.DeviceSyncWorker.syncNow(context)
+            }
         } else {
-            note = "VPN permission was not granted, so the scam-site blocker stays off."
+            val prep = VpnService.prepare(context)
+            if (prep == null) startBlocker() else askVpn.launch(prep)
         }
     }
+}
+
+@Composable
+fun BlockerSectionBody(container: AppContainer) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val blocker = rememberBlockerToggle(container)
+    val allowed by container.prefs.allowedSites.collectAsState(initial = emptySet())
+    var note by remember { mutableStateOf<String?>(null) }
 
     val privateDns = remember { getPrivateDnsServer(context) }
     val now = System.currentTimeMillis()
@@ -77,30 +98,8 @@ fun BlockerSectionBody(container: AppContainer) {
     val explain = "Blocks known phishing and malware sites before they can load in any app on your phone. " +
         "Checks hostnames on your device against a downloaded list. Browsing never leaves your phone."
 
-    SwitchRow(
-        title = "Scam-site blocker",
-        text = explain,
-        checked = isChecked,
-        enabled = true,
-    ) {
-        if (isChecked) {
-            val stop = Intent(context, ArgusVpnService::class.java).apply {
-                action = ArgusVpnService.ACTION_STOP
-            }
-            context.startService(stop)
-            scope.launch {
-                container.prefs.setBlockerEnabled(false)
-                app.askargus.work.DeviceSyncWorker.syncNow(context)
-            }
-        } else {
-            val prep = VpnService.prepare(context)
-            if (prep == null) {
-                startBlocker()
-            } else {
-                askVpn.launch(prep)
-            }
-        }
-    }
+    SwitchRow(title = "Scam-site blocker", text = explain, checked = blocker.on, enabled = true, onToggle = blocker.toggle)
+    blocker.note?.let { Text(it, color = ArgusColors.MutedText) }
 
     if (privateDns != null) {
         Spacer(Modifier.height(4.dp))
@@ -135,18 +134,28 @@ fun BlockerSectionBody(container: AppContainer) {
     }
 
     ArgusOutlinedButton(
-        text = if (updating) "Updating blocklist…" else "Update blocklist now",
-        enabled = !updating,
+        text = "Update blocklist now",
         modifier = Modifier.fillMaxWidth(),
         onClick = {
-            updating = true
             BlocklistWorker.now(context)
             note = "Blocklist update started."
-            updating = false
         },
     )
 
     note?.let { Text(it, color = ArgusColors.MutedText) }
+
+    if (allowed.isNotEmpty()) {
+        Spacer(Modifier.height(4.dp))
+        Text("Sites you allowed", color = ArgusColors.Foreground)
+        allowed.sorted().forEach { site ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(site, color = ArgusColors.MutedText, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                TextButton(onClick = { scope.launch { AllowList.blockAgain(container.prefs, site) } }) {
+                    Text("Block again", color = ArgusColors.Foreground)
+                }
+            }
+        }
+    }
 }
 
 private fun getPrivateDnsServer(context: Context): String? {

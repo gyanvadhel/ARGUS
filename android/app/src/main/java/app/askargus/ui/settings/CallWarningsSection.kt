@@ -31,12 +31,18 @@ import app.askargus.ui.theme.ArgusColors
 import app.askargus.work.ScamListWorker
 import kotlinx.coroutines.launch
 
+/** The call-warnings switch, shared by Home and Settings: what state it's in and what tapping it does. */
+class CallToggle(val state: CallRole.State, val note: String?, val toggle: () -> Unit) {
+    val on: Boolean get() = state == CallRole.State.ON
+    /** False when the switch can't do anything yet (no account, or Android too old). */
+    val usable: Boolean get() = state != CallRole.State.NEEDS_SIGN_IN && state != CallRole.State.UNSUPPORTED
+}
+
 @Composable
-fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
+fun rememberCallToggle(container: AppContainer, signedIn: Boolean): CallToggle {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val switchOn by container.prefs.callWarnings.collectAsState(initial = false)
-    val silence by container.prefs.silenceCalls.collectAsState(initial = false)
     var note by remember { mutableStateOf<String?>(null) }
     // Android doesn't announce a change in notification permission, so it's re-read after every answer.
     var notificationsAllowed by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
@@ -68,35 +74,45 @@ fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
     }
 
     val state = CallRole.state(Build.VERSION.SDK_INT, signedIn, switchOn, CallRole.holds(context), notificationsAllowed)
-    val explain = "Warns you while a scam number is calling. Only numbers that aren't in your contacts are checked, " +
-        "and each new one is sent to Argus to look up."
-    when (state) {
-        CallRole.State.NEEDS_SIGN_IN -> SwitchRow("Call warnings", "Sign in to turn on call warnings.", checked = false, enabled = false) {}
-        CallRole.State.UNSUPPORTED -> SwitchRow("Call warnings", "Needs Android 10 or newer.", checked = false, enabled = false) {}
-        CallRole.State.OFF -> SwitchRow("Call warnings", explain, checked = false, enabled = true) {
-            if (CallRole.holds(context)) turnOn() else CallRole.requestIntent(context)?.let { askForRole.launch(it) }
-        }
-        CallRole.State.NEEDS_NOTIFICATIONS -> SwitchRow(
-            "Call warnings",
-            "Notifications are off for Argus, so it can't warn you. Tap to allow them.",
-            checked = false, enabled = true,
-        ) { allowNotifications() }
-        CallRole.State.ON -> SwitchRow("Call warnings", explain, checked = true, enabled = true) {
-            scope.launch {
-                container.prefs.setCallWarnings(false)
-                app.askargus.work.DeviceSyncWorker.syncNow(context)
+    return CallToggle(state, note) {
+        when (state) {
+            CallRole.State.NEEDS_SIGN_IN, CallRole.State.UNSUPPORTED -> Unit
+            CallRole.State.OFF -> if (CallRole.holds(context)) turnOn() else CallRole.requestIntent(context)?.let { askForRole.launch(it) }
+            CallRole.State.NEEDS_NOTIFICATIONS -> allowNotifications()
+            CallRole.State.ON -> {
+                scope.launch {
+                    container.prefs.setCallWarnings(false)
+                    app.askargus.work.DeviceSyncWorker.syncNow(context)
+                }
+                note = "Argus has stopped checking calls. To take away its call-screening role as well, go to " +
+                    "Settings > Apps > Default apps > Caller ID & spam."
             }
-            note = "Argus has stopped checking calls. To take away its call-screening role as well, go to " +
-                "Settings > Apps > Default apps > Caller ID & spam."
         }
     }
+}
+
+@Composable
+fun CallWarningsBody(container: AppContainer, signedIn: Boolean) {
+    val scope = rememberCoroutineScope()
+    val silence by container.prefs.silenceCalls.collectAsState(initial = false)
+    val calls = rememberCallToggle(container, signedIn)
+    val state = calls.state
+    val explain = "Warns you while a scam number is calling. Only numbers that aren't in your contacts are checked, " +
+        "and each new one is sent to Argus to look up."
+    val text = when (state) {
+        CallRole.State.NEEDS_SIGN_IN -> "Sign in to turn on call warnings."
+        CallRole.State.UNSUPPORTED -> "Needs Android 10 or newer."
+        CallRole.State.NEEDS_NOTIFICATIONS -> "Notifications are off for Argus, so it can't warn you. Tap to allow them."
+        else -> explain
+    }
+    SwitchRow("Call warnings", text, checked = calls.on, enabled = calls.usable, onToggle = calls.toggle)
     SwitchRow(
         "Silence likely scam calls",
         "Only silences numbers Argus already knows are scams. The call still shows in your recents.",
-        checked = silence && state == CallRole.State.ON,
-        enabled = state == CallRole.State.ON,
+        checked = silence && calls.on,
+        enabled = calls.on,
     ) { scope.launch { container.prefs.setSilenceCalls(!silence) } }
-    note?.let { Text(it, color = ArgusColors.MutedText) }
+    calls.note?.let { Text(it, color = ArgusColors.MutedText) }
 }
 
 @Composable

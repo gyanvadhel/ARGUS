@@ -29,16 +29,18 @@ import app.askargus.ui.components.LevelPill
 import app.askargus.ui.theme.ArgusColors
 
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.TextButton
+import app.askargus.blocker.AllowList
 import app.askargus.blocker.BlockerState
 import kotlinx.coroutines.launch
 
 @Composable
 fun ActivityScreen(container: AppContainer) {
     val events by container.activity.recent().collectAsState(initial = emptyList())
+    // Read so a row redraws when a site is allowed or blocked again, here, in Settings or from a notification.
+    val allowedSites by container.prefs.allowedSites.collectAsState(initial = emptySet())
     val host = LocalHost.current
     val now = System.currentTimeMillis()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -50,29 +52,18 @@ fun ActivityScreen(container: AppContainer) {
             item { ArgusCard { Text("Nothing yet. Checks you run and warnings Argus gives will show up here.") } }
         }
         items(events, key = { it.id }) { e ->
-            ActivityRow(e, now, container) { e.scanId?.let { host.openPage("/scan/$it") } }
+            ActivityRow(e, now, container, allowedSites, Modifier.animateItem()) { e.scanId?.let { host.openPage("/scan/$it") } }
         }
     }
 }
 
 @Composable
-private fun ActivityRow(e: ActivityEvent, now: Long, container: AppContainer, onOpen: () -> Unit) {
+private fun ActivityRow(e: ActivityEvent, now: Long, container: AppContainer, allowedSites: Set<String>, modifier: Modifier, onOpen: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var isAllowed by remember(e.subject) { mutableStateOf(BlockerState.isAllowed(e.subject)) }
+    val isSite = e.type == "site"
+    val isAllowed = remember(e.subject, allowedSites) { isSite && BlockerState.isAllowed(e.subject) }
 
-    val onClick: (() -> Unit)? = when {
-        e.scanId != null -> onOpen
-        e.type == "site" && !isAllowed -> {
-            {
-                BlockerState.allow(e.subject)
-                isAllowed = true
-                scope.launch { container.prefs.allowSite(e.subject) }
-            }
-        }
-        else -> null
-    }
-
-    ArgusCard(onClick = onClick) {
+    ArgusCard(modifier, onClick = if (e.scanId != null) onOpen else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row {
@@ -81,19 +72,26 @@ private fun ActivityRow(e: ActivityEvent, now: Long, container: AppContainer, on
                     Text(TimeAgo.format(now, e.at), style = MaterialTheme.typography.labelMedium, color = ArgusColors.MutedText)
                 }
                 Text(e.subject, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (e.type == "site" && !isAllowed) {
-                    Spacer(Modifier.height(4.dp))
-                    Text("Tap to allow this site", style = MaterialTheme.typography.labelSmall, color = ArgusColors.Foreground)
-                }
             }
             Spacer(Modifier.width(10.dp))
             when {
                 e.type == "upi" -> LevelPill("Sends money", ArgusColors.Sus)
-                e.type == "site" -> {
-                    if (isAllowed) LevelPill("Allowed", ArgusColors.Clear)
-                    else LevelPill("Blocked", ArgusColors.High)
-                }
+                isSite -> if (isAllowed) LevelPill("Allowed", ArgusColors.Clear) else LevelPill("Blocked", ArgusColors.High)
                 e.level != null -> Levels.meta(e.level, e.verified).let { LevelPill(it.label, ArgusColors.risk(it.risk)) }
+            }
+        }
+        if (isSite) {
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (isAllowed) "You let this site through." else "Argus stopped this known scam site from opening.",
+                    style = MaterialTheme.typography.bodyMedium, color = ArgusColors.MutedText, modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = {
+                    scope.launch {
+                        if (isAllowed) AllowList.blockAgain(container.prefs, e.subject) else AllowList.allow(container.prefs, e.subject)
+                    }
+                }) { Text(if (isAllowed) "Block again" else "Allow", color = ArgusColors.Foreground) }
             }
         }
     }
