@@ -126,6 +126,11 @@ class ArgusApi(
         false
     }
 
+    /** Signing out: the server forgets this phone, so the circle stops seeing it and stops pushing to it. */
+    suspend fun forgetDevice(deviceId: String) {
+        authed("DELETE", "/api/app/device", buildJsonObject { put("deviceId", deviceId) }, JsonObject.serializer())
+    }
+
     suspend fun leaveFamily(linkId: String) {
         authed("DELETE", "/api/app/family/${enc(linkId)}", null, JsonObject.serializer())
     }

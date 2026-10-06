@@ -27,8 +27,8 @@ android {
         applicationId = "app.askargus"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
         buildConfigField("String", "APP_URL", quoted("appUrl"))
         buildConfigField("String", "SUPABASE_URL", quoted("supabaseUrl"))
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", quoted("supabasePublishableKey"))

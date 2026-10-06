@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const mockAdmin = vi.fn(() => null);
+vi.mock("./supabase/admin", () => ({ adminClient: () => mockAdmin() }));
 import { composeAlert, planAlerts } from "./family-alerts";
 
 describe("composeAlert", () => {
@@ -44,5 +47,14 @@ describe("planAlerts", () => {
   it("doesn't repeat the same alert within ten minutes", () => {
     expect(planAlerts(contacts, [{ subject: "x", created_at: "2026-09-25T11:55:00Z" }], "x", now)).toEqual([]);
     expect(planAlerts(contacts, [{ subject: "x", created_at: "2026-09-25T11:45:00Z" }], "x", now)).toHaveLength(1);
+  });
+});
+
+describe("alertFamily", () => {
+  it("sends a test to one Telegram contact without pushing to the whole family circle", async () => {
+    const { alertFamily } = await import("./family-alerts");
+    const supabase = { auth: { getUser: async () => ({ data: { user: { id: "u1", user_metadata: {} } } }) } };
+    await alertFamily(supabase as never, { kind: "test" }, "contact-1");
+    expect(mockAdmin).not.toHaveBeenCalled();
   });
 });

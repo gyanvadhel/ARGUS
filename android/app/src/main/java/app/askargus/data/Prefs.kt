@@ -77,6 +77,9 @@ class Prefs(private val context: Context) {
         return newId
     }
 
+    /** A new identity for this phone, for the next account that signs in on it. */
+    suspend fun resetDeviceId() = context.argusPrefs.edit { it.remove(K.deviceId) }
+
     val fcmToken: Flow<String?> = data.map { it[K.fcmToken] }
     suspend fun getFcmToken(): String? = data.first()[K.fcmToken]
     suspend fun setFcmToken(token: String?) = context.argusPrefs.edit {

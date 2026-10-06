@@ -160,6 +160,15 @@ class ArgusApiTest {
         assertTrue(body.contains("\"fcmToken\":\"token-xyz\""))
     }
 
+    @Test fun forgetDeviceDeletesThisPhone() = runTest {
+        server.enqueue(MockResponse().setBody("""{"ok":true}"""))
+        api.forgetDevice("dev-123")
+        val req = server.takeRequest()
+        assertEquals("DELETE", req.method)
+        assertEquals("/api/app/device", req.path)
+        assertTrue(req.body.readUtf8().contains("\"deviceId\":\"dev-123\""))
+    }
+
     @Test fun familyStatusReturnsMemberDevices() = runTest {
         val json = """{"members":[{"memberId":"m1","memberName":"Mom","deviceId":"d1","deviceName":"Pixel 7","appVersion":"0.2.0","protections":{"calls":true,"blocker":true},"lastSeenAt":"2026-10-06T12:00:00Z"}]}"""
         server.enqueue(MockResponse().setBody(json))

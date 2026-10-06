@@ -197,9 +197,11 @@ class ArgusVpnService : VpnService() {
             if (name != null && index.blocked(name) && !BlockerState.isAllowed(name)) {
                 // Blocked — send NXDOMAIN
                 responsePayload = DnsPacket.nxdomain(dnsPayload)
-                BlockerState.recordBlock(name)
-                BlockerNotifications.blocked(this, name)
-                val app = applicationContext as? ArgusApp
+                val app = if (BlockerState.shouldReport(name)) applicationContext as? ArgusApp else null
+                if (app != null) {
+                    BlockerState.recordBlock(name)
+                    BlockerNotifications.blocked(this, name)
+                }
                 app?.container?.let { container ->
                     val scope = ensureScope()
                     scope.launch {

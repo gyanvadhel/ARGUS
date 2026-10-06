@@ -144,8 +144,8 @@ export async function alertFamily(supabase: Supabase, event: AlertEvent, onlyCon
   if (!user) return 0;
   const person = String(user.user_metadata?.full_name ?? "").split(" ")[0] || "your family member";
 
-  // 1. Dispatch push notifications to the user's family circle (Android app devices)
-  const pushCount = await pushToFamilyCircle(user.id, event, person);
+  // 1. Push to the family circle's phones, unless this is aimed at one Telegram contact (a test send).
+  const pushCount = onlyContact ? 0 : await pushToFamilyCircle(user.id, event, person);
 
   // 2. Dispatch Telegram alerts to configured trusted contacts
   const token = telegramToken();

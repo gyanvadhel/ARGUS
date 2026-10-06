@@ -8,6 +8,8 @@ class Account(
     private val sessions: ObservableSessionStore,
     private val appUrl: String,
     private val onSignedOut: suspend () -> Unit = {},
+    /** Runs while the session still works, so the server can be told to forget this phone. Failing doesn't stop sign-out. */
+    private val beforeSignOut: suspend () -> Unit = {},
 ) {
     val session: StateFlow<Session?> get() = sessions.state
 
@@ -27,6 +29,12 @@ class Account(
     suspend fun signInWithGoogle(idToken: String, rawNonce: String) = sessions.save(auth.signInWithGoogle(idToken, rawNonce))
 
     suspend fun signOut() {
+        try {
+            beforeSignOut()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
         sessions.load()?.let { auth.signOut(it.accessToken) }
         sessions.save(null)
         onSignedOut()

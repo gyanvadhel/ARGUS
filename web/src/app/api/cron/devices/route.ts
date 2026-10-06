@@ -17,12 +17,16 @@ export async function GET(request: Request) {
     return new Response("Supabase admin client not available.", { status: 500 });
   }
 
-  // Find devices that have not checked in for 48 hours
-  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  // Phones that went quiet between 48 and 72 hours ago. The cron runs once a day, so each silent phone falls in this
+  // window exactly once: the circle hears about it once, not every day until the app is reinstalled.
+  const HOUR = 60 * 60 * 1000;
+  const cutoff = new Date(Date.now() - 48 * HOUR).toISOString();
+  const since = new Date(Date.now() - 72 * HOUR).toISOString();
   const { data: offlineDevices, error } = await admin
     .from("app_devices")
     .select("id, user_id, name, last_seen_at")
-    .lt("last_seen_at", cutoff);
+    .lt("last_seen_at", cutoff)
+    .gte("last_seen_at", since);
 
   if (error || !offlineDevices) {
     return new Response(JSON.stringify({ error: error?.message ?? "Query failed" }), {

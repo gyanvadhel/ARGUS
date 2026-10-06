@@ -28,10 +28,28 @@ object BlockerState {
     /** Total blocks today. */
     val blocksToday: Int get() = todayBlocks.get()
 
+    private val lastReported = ConcurrentHashMap<String, Long>()
+
     fun resetDaily() {
         todayBlocks.set(0)
         blockedToday.clear()
+        lastReported.clear()
     }
+
+    /**
+     * One visit to a blocked site makes several lookups (IPv4, IPv6, retries). Only the first in a minute counts, so the
+     * person gets one notification and one Activity row per visit.
+     */
+    fun shouldReport(name: String, now: Long = System.currentTimeMillis()): Boolean {
+        val key = name.lowercase().trimEnd('.')
+        var report = false
+        lastReported.compute(key) { _, last ->
+            if (last == null || now - last >= REPORT_WINDOW_MS) { report = true; now } else last
+        }
+        return report
+    }
+
+    private const val REPORT_WINDOW_MS = 60_000L
 
     fun recordBlock(name: String) {
         todayBlocks.incrementAndGet()

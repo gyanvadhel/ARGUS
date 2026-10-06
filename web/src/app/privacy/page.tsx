@@ -113,7 +113,7 @@ export default function PrivacyPage() {
           Family circle: a link works once and expires after 7 days, and only a scrambled (hashed) form of it is
           stored. When someone joins, you both see each other&apos;s name in the app, along with each member&apos;s
           device protection status (which protections are enabled, app version, and when the phone last checked in).
-          Either of you can remove the link at any time. When a family member gets a high-risk warning, turns off a
+          Either of you can remove the link at any time, and signing out of the app removes that phone from your circle. When a family member gets a high-risk warning, turns off a
           protection, or hasn&apos;t checked in for 48 hours, Argus notifies their circle via push notifications sent
           through Google Firebase Cloud Messaging (FCM). Push alerts say what kind of risk and how severe, never what a
           message or email said, and never a blocked site&apos;s name; calls may include the scammer&apos;s number.

@@ -2,19 +2,22 @@
 
 Read this together with `AI_HANDOFF.md` (the whole project) and
 `docs/superpowers/specs/2026-09-30-android-app-design.md` (the Android design spec, which is the authority if the
-two disagree). Written 2026-10-06.
+two disagree). Written 2026-10-06; status updated 2026-10-07.
 
 ## Where things stand
 
 | Phase | What | State |
 |---|---|---|
 | 1 | Foundation: app, sign-in, scanner, QR/screenshots, share, Activity, update check, family invites | Released as `android-v0.1.0` |
-| 2 | Call warnings | Built, loose ends fixed, and signed release APK built (`android-v0.2.0`) |
-| 3 | Scam-site blocker | 100% built and verified (engine, web CDN proxy, and Android VPN blocker) |
-| 4, 5 | SMS helper, Gmail alerts | Planned / Coming soon (in development for future updates) |
-| 6 | Family circle (status + push) | 100% built and verified (migration, FCM v1 service, device check-in, 48h cron, and Android status cards) |
+| 2 | Call warnings | Built; phase 2 loose ends fixed. Ships in `android-v0.2.1` |
+| 3 | Scam-site blocker | Built and unit-tested; engine and `/api/blocklist` live (about 278k names). **Not yet tried on a real phone** |
+| 4, 5 | SMS helper, Gmail alerts | Dropped by the owner. Don't build them |
+| 6 | Family circle (status + push) | Built and unit-tested. Needs the migration applied and `FIREBASE_SERVICE_ACCOUNT`, `SUPABASE_SECRET_KEY`, `CRON_SECRET` on Vercel. **Push not yet tried end to end** |
 
-The project is due around **2026-10-08**. Suggested order: release 0.2.0 → phase 3 → phase 6. Phase 6 needs the
+`android-v0.2.0` was tagged but never published as a release (the tag predates the blocker fixes); `android-v0.2.1`
+is the release to publish.
+
+The project is due around **2026-10-08**. Suggested order: publish 0.2.1 → try the blocker and family push on a real phone → loose ends. Phase 6 needs the
 owner to set up Firebase first (see its section), so ask for that early.
 
 ## Ground rules (the owner cares about these)
@@ -48,13 +51,13 @@ owner to set up Firebase first (see its section), so ask for that early.
   `web/src/lib/app-caps.ts`. The secret key (`SUPABASE_SECRET_KEY`) is used only server-side for things a user must
   not be able to steer (see `web/src/lib/phone-cache.ts`).
 
-## Step 0: release Android 0.2.0 (call warnings)
+## Step 0: release Android 0.2.1 (call warnings, blocker, family circle)
 
-1. In `android/app/build.gradle.kts` set `versionCode = 2`, `versionName = "0.2.0"`.
+1. In `android/app/build.gradle.kts` `versionCode = 3`, `versionName = "0.2.1"` (already set).
 2. Build the signed APK (command above). Install it on a phone, turn on Settings → Calls → Call warnings, and call
    it from another phone with an unknown number. The owner chose to skip the emulator test for this release.
-3. Commit, tag `android-v0.2.0`, and create a GitHub release on `gyanvadhel/ARGUS` with the APK attached as
-   `argus-0.2.0.apk`. The download page (`askargus.app/app`) and the in-app update check read the latest release
+3. Commit, tag `android-v0.2.1`, and create a GitHub release on `gyanvadhel/ARGUS` with the APK attached as
+   `argus-0.2.1.apk`. The download page (`askargus.app/app`) and the in-app update check read the latest release
    from GitHub, so nothing else changes. **Ask the owner before pushing the tag or publishing.**
 4. In the spec's "Build phases" list, mark phase 2 as released.
 

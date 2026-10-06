@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ipaddress
 import logging
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -44,6 +45,10 @@ SHARED_HOSTS: frozenset[str] = frozenset({
 })
 
 TRANCO_CUTOFF = 100_000
+
+# What a DNS lookup can actually ask for: dot-separated labels of letters, digits, hyphens (and the underscores some
+# real hosts use). Anything else in a feed is junk the phone would never see.
+_HOSTNAME = re.compile(r"^(?=.{1,253}$)[a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9_])?(\.[a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9_])?)+$")
 
 
 def _is_ip(name: str) -> bool:
@@ -87,6 +92,11 @@ def build_blocklist(store: FeedStore) -> list[str]:
     for name in raw:
         name = name.lower().strip().rstrip(".")
         if not name or _is_ip(name):
+            continue
+        # "host:8080" is looked up as "host"; a port never reaches DNS.
+        if ":" in name and name.count(":") == 1 and name.rsplit(":", 1)[1].isdigit():
+            name = name.rsplit(":", 1)[0]
+        if not _HOSTNAME.match(name):
             continue
 
         # Is this name itself a shared host?  Drop it (the bare root).

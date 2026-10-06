@@ -504,6 +504,8 @@ Android (`android/`)
 - `/api/app/latest` – fetches newest release metadata from GitHub releases
 - `/api/app/family/*` – invite creation/validation, family list management
 - `/api/app/phone`, `/api/app/scam-numbers`, `/api/app/report` – call warnings (see below)
+- `/api/app/device` (POST check-in, DELETE on sign-out), `/api/app/family/status` – family circle (see below)
+- `/api/blocklist` (public, CDN-cached) and `/api/cron/devices` (daily Vercel cron, `CRON_SECRET`) – see below
 Daily caps (`lib/rate-limit.ts`) apply per account via Supabase JWT claims.
 
 **Handoff:** `SUPABASE_SECRET_KEY` (Vercel, Sensitive) is used to sign handoff tokens. When the app opens a website page, it exchanges a one-time code (via `/api/app/handoff`) for the user's Supabase session, avoiding double sign-in.
@@ -533,7 +535,23 @@ uses the shared 24-hour cache (`phone_verdicts`, migration `20261006000000_phone
 calls to history as kind `call` and alerts family at ≥ 80. Engine (`api/argus_api/checkers/phone.py`, text rules):
 India's 140/1600 series and the bank-asks-you-to-call-a-mobile text rule.
 
-**Next:** releasing 0.2.0, then Phase 3 (scam-site blocker) and Phase 6 (family circle). What and how: `docs/NEXT_PHASES.md`.
+**Scam-site blocker (Phase 3):** `app/src/main/java/app/askargus/blocker/`. Engine `GET /blocklist`
+(`api/argus_api/blocklist.py`: feed host names minus shared platforms and the Tranco top 100k) → website
+`/api/blocklist` (CDN-cached 6 h) → `BlocklistWorker` stores hashes (`HostIndex`, binary search, parent domains match).
+`ArgusVpnService` routes only the fake DNS address `10.111.222.53` / `fd00:a7:5::53`; blocked names get NXDOMAIN, the
+rest are forwarded over a protected socket to the network's DNS. One notification and one Activity row per visit
+(`BlockerState.shouldReport`, 1-minute window). Settings warns about Private DNS.
+
+**Family circle (Phase 6):** migration `20261006120000_app_devices.sql` (`app_devices`, `family_status()` that never
+returns the push token). `DeviceSyncWorker` checks in daily and on changes; a protection going on → off pushes to the
+circle (sent with `after()`). Push is FCM HTTP v1 in `web/src/lib/fcm.ts`, added next to Telegram in
+`lib/family-alerts.ts`; tokens are read with the secret key only, and a token is cleared from any other account's row
+when a phone checks in. Signing out deletes the phone's row and gives it a new device id. The daily cron tells the
+circle once when a phone goes quiet (48–72 h window). Needs on Vercel: `FIREBASE_SERVICE_ACCOUNT`,
+`SUPABASE_SECRET_KEY`, `CRON_SECRET`. `android/app/google-services.json` is committed (not secret).
+
+**Next:** publish the `android-v0.2.1` GitHub release (APK built from that tag), then test the blocker and family
+push on a real phone. Remaining ideas and loose ends: `docs/NEXT_PHASES.md`.
 
 ## 7. Browser extension (`extension/`)
 

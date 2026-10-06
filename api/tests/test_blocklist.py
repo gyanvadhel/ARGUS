@@ -120,3 +120,17 @@ def test_subdomain_of_shared_host_not_dropped_by_parent_tranco(tmp_path):
     store.refresh()
     names = build_blocklist(store)
     assert "evil.pages.dev" in names
+
+
+def test_feed_junk_becomes_a_plain_hostname_or_is_dropped(tmp_path):
+    store = _store(tmp_path)
+    store._domains.update({
+        "123.ywxww.net:820",                      # a port: the phone looks up the name, so keep the name
+        "%20mandrillapp.com",                     # URL-encoded garbage
+        "%20%25**)(user@example.invalid",         # not a hostname at all
+        "10000susan_gilbert.goodluckseeker.com",  # underscores do occur in real DNS names; keep it
+    })
+    names = build_blocklist(store)
+    assert "123.ywxww.net" in names
+    assert "10000susan_gilbert.goodluckseeker.com" in names
+    assert not any(":" in n or "%" in n or "@" in n or "*" in n for n in names)

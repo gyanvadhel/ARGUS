@@ -25,8 +25,15 @@ class AppContainer(context: Context) {
     val prefs = Prefs(context)
     private val sessions = ObservableSessionStore(EncryptedSessionStore(context))
     private val auth = SupabaseAuth(http, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY)
-    val account = Account(auth, sessions, BuildConfig.APP_URL, onSignedOut = { prefs.setWebSignedInFor(null) })
     val api = ArgusApi(http, BuildConfig.APP_URL, auth, sessions)
+    val account = Account(
+        auth, sessions, BuildConfig.APP_URL,
+        onSignedOut = {
+            prefs.setWebSignedInFor(null)
+            prefs.resetDeviceId()
+        },
+        beforeSignOut = { api.forgetDevice(prefs.deviceId()) },
+    )
     val activity: ActivityDao by lazy { ActivityDb.get(context).dao() }
     val reader = ImageReader(context.applicationContext)
     val callMemory = CallMemory(prefs.store)

@@ -45,4 +45,30 @@ class AccountTest {
         assertNull(account.session.value)
         assertTrue(signedOut)
     }
+
+    @Test fun signOutForgetsThisPhoneWhileTheSessionStillWorks() = runTest {
+        var hadSession = false
+        val acc = Account(
+            SupabaseAuth(OkHttpClient(), server.url("/").toString(), "pk", now = { NOW }),
+            sessions, "https://askargus.app",
+            beforeSignOut = { hadSession = sessions.load() != null },
+        )
+        server.enqueue(MockResponse().setBody(sessionJson("a1")))
+        acc.signIn("asha@example.com", "pw123456")
+        acc.signOut()
+        assertTrue(hadSession)
+        assertNull(acc.session.value)
+    }
+
+    @Test fun signOutStillSignsOutWhenForgettingThePhoneFails() = runTest {
+        val acc = Account(
+            SupabaseAuth(OkHttpClient(), server.url("/").toString(), "pk", now = { NOW }),
+            sessions, "https://askargus.app",
+            beforeSignOut = { error("offline") },
+        )
+        server.enqueue(MockResponse().setBody(sessionJson("a1")))
+        acc.signIn("asha@example.com", "pw123456")
+        acc.signOut()
+        assertNull(acc.session.value)
+    }
 }

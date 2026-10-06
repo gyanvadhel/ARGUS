@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { appUser, fail, unauthorized } from "@/lib/app-auth";
 import { alertProtectionDisabled } from "@/lib/family-alerts";
+import { adminClient } from "@/lib/supabase/admin";
 
 type DeviceRequestBody = {
   deviceId?: unknown;
@@ -58,8 +60,8 @@ export async function POST(request: Request) {
             : key === "calls"
               ? "Call warnings"
               : key;
-        // Non-blocking alert dispatch to circle
-        void alertProtectionDisabled(auth.user.id, person, label, devName);
+        // Sent after the reply; a bare promise could be cut off when the function finishes.
+        after(() => alertProtectionDisabled(auth.user.id, person, label, devName));
       }
     }
   }
@@ -78,5 +80,34 @@ export async function POST(request: Request) {
     return fail(500, "Couldn't record device status.");
   }
 
+  // A push token belongs to one phone. If this phone was signed in to another account before (and its sign-out never
+  // reached us), that old row still holds the token and would keep getting the old circle's alerts.
+  if (fcmToken) {
+    await adminClient()
+      ?.from("app_devices")
+      .update({ fcm_token: null })
+      .eq("fcm_token", fcmToken)
+      .neq("id", deviceId);
+  }
+
+  return Response.json({ ok: true });
+}
+
+/** Signing out: forget this phone, so its circle stops seeing it and stops pushing to it. */
+export async function DELETE(request: Request) {
+  const auth = await appUser(request);
+  if (!auth) return unauthorized();
+
+  let deviceId = "";
+  try {
+    const body = (await request.json()) as { deviceId?: unknown };
+    deviceId = typeof body.deviceId === "string" ? body.deviceId.trim() : "";
+  } catch {
+    return fail(400, "Invalid JSON body.");
+  }
+  if (!deviceId || deviceId.length > 120) return fail(400, "Invalid or missing deviceId.");
+
+  const { error } = await auth.supabase.from("app_devices").delete().eq("id", deviceId);
+  if (error) return fail(500, "Couldn't forget this device.");
   return Response.json({ ok: true });
 }
