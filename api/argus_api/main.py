@@ -120,7 +120,13 @@ def blocklist() -> PlainTextResponse:
     now = time.time()
     if _blocklist_cache is None or now - _blocklist_cache[0] > 6 * 3600:
         names = build_blocklist(feeds.store)
-        _blocklist_cache = (now, "\n".join(names) + "\n" if names else "")
+        if not names:
+            feeds.store.load_from_cache()
+            names = build_blocklist(feeds.store)
+        if names:
+            _blocklist_cache = (now, "\n".join(names) + "\n")
+        else:
+            return PlainTextResponse("Blocklist warming up\n", status_code=503)
     return PlainTextResponse(_blocklist_cache[1], media_type="text/plain")
 
 

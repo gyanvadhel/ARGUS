@@ -33,6 +33,13 @@ export async function GET() {
   }
 
   const body = await res.text();
+  if (!body.trim()) {
+    return new Response("Blocklist warming up\n", {
+      status: 503,
+      headers: { "Cache-Control": "no-cache" },
+    });
+  }
+
   return new Response(body, {
     status: 200,
     headers: {
