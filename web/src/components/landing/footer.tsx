@@ -10,7 +10,10 @@ export function Footer() {
           <span className="font-display text-xl">Argus</span>
         </div>
         <p>Threat data from URLhaus (abuse.ch), OpenPhish, Phishing.Database, VirusTotal and FCC complaint records.</p>
-        <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+        <div className="flex items-center gap-6">
+          <Link href="/app" className="hover:text-foreground">Android app</Link>
+          <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+        </div>
       </div>
     </footer>
   );

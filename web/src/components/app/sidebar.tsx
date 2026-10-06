@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, LayoutDashboard, LogOut, Mail, PhoneIncoming, ScanSearch, Users } from "lucide-react";
+import { History, LayoutDashboard, LogOut, Mail, PhoneIncoming, ScanSearch, Smartphone, Users } from "lucide-react";
 import { WatchingEye } from "@/components/eye/watching-eye";
 import { signOut } from "@/app/(auth)/actions";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,14 @@ export function Sidebar({ name, email }: { name: string; email: string }) {
           </Link>
         ))}
       </nav>
-      <div className="mt-auto rounded-2xl border border-border/60 p-3">
+      <Link
+        href="/app"
+        className="mt-auto mb-3 flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+      >
+        <Smartphone className="size-4" />
+        Get the Android app
+      </Link>
+      <div className="rounded-2xl border border-border/60 p-3">
         <p className="truncate text-sm font-medium">{name}</p>
         <p className="truncate text-xs text-muted-foreground">{email}</p>
         <form action={signOut}>

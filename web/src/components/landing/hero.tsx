@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Smartphone } from "lucide-react";
 import { previewScan, type PreviewResult } from "@/app/preview-actions";
 import { LevelPill } from "@/components/app/level-pill";
 import { Eye, type EyeMood } from "@/components/eye/eye";
@@ -143,7 +144,7 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
           <div
             className={cn(
               "mx-auto flex w-full max-w-[1600px] items-start justify-between gap-10 transition-all duration-300",
-              focused && compact ? "max-h-0 opacity-0 overflow-hidden -translate-y-4 pointer-events-none pb-0 m-0" : "max-h-40 opacity-100",
+              focused && compact ? "max-h-0 opacity-0 overflow-hidden -translate-y-4 pointer-events-none pb-0 m-0" : "max-h-64 opacity-100",
             )}
           >
             <div className="max-w-sm">
@@ -152,6 +153,12 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
                 Argus checks links, files, emails, texts and phone numbers against real threat intelligence, then tells you in
                 plain words whether it&apos;s safe.
               </p>
+              <Link
+                href="/app"
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-border/70 px-4 py-2 text-sm text-foreground/90 transition-colors hover:bg-white/5 hover:text-foreground"
+              >
+                <Smartphone className="size-4" /> Get the Android app
+              </Link>
             </div>
             <p className="hidden text-right text-sm leading-relaxed text-muted-foreground md:block">
               Move your cursor.

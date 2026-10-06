@@ -178,7 +178,7 @@ export function HeroBreakdown({ result, onClear }: HeroBreakdownProps) {
             href="/app"
             className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors underline decoration-foreground/20 underline-offset-4"
           >
-            Open in full scanning app →
+            Check things on your phone with the Android app →
           </Link>
         )}
         <span className="text-[11px] text-muted-foreground/70">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Smartphone } from "lucide-react";
 import { WatchingEye } from "@/components/eye/watching-eye";
 import { Magnetic } from "@/components/fx/magnetic";
 import { buttonVariants } from "@/components/ui/button";
@@ -15,11 +16,18 @@ export function Cta() {
           feel off?
         </h2>
         <p className="mt-8 max-w-md text-lg text-muted-foreground">Paste it into Argus. You&apos;ll know in seconds.</p>
-        <Magnetic className="mt-12">
-          <Link href="/signup" className={cn(buttonVariants(), "h-14 rounded-full px-10 text-base")}>
-            Create free account
-          </Link>
-        </Magnetic>
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
+          <Magnetic>
+            <Link href="/signup" className={cn(buttonVariants(), "h-14 rounded-full px-10 text-base")}>
+              Create free account
+            </Link>
+          </Magnetic>
+          <Magnetic>
+            <Link href="/app" className={cn(buttonVariants({ variant: "outline" }), "h-14 gap-2 rounded-full px-8 text-base")}>
+              <Smartphone className="size-5" /> Get the Android app
+            </Link>
+          </Magnetic>
+        </div>
       </div>
     </section>
   );

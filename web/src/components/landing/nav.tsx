@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Smartphone } from "lucide-react";
 import { WatchingEye } from "@/components/eye/watching-eye";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,12 +18,22 @@ export function Nav({ signedIn }: { signedIn: boolean }) {
           <a href="#next" className="hover:text-foreground">Coming next</a>
         </nav>
         <div className="flex items-center gap-2">
+          <Link
+            href="/app"
+            className={cn(buttonVariants({ variant: "ghost" }), "hidden h-10 gap-2 px-4 text-foreground sm:inline-flex")}
+          >
+            <Smartphone className="size-4" />
+            Android app
+          </Link>
           {signedIn ? (
             <Link href="/dashboard" className={cn(buttonVariants(), "h-10 rounded-full px-5")}>Open dashboard</Link>
           ) : (
             <>
               <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "h-10 px-4 text-foreground")}>Sign in</Link>
-              <Link href="/signup" className={cn(buttonVariants(), "h-10 rounded-full px-5")}>Create account</Link>
+              <Link href="/signup" className={cn(buttonVariants(), "h-10 rounded-full px-4 sm:px-5")}>
+                <span className="sm:hidden">Sign up</span>
+                <span className="hidden sm:inline">Create account</span>
+              </Link>
             </>
           )}
         </div>
