@@ -39,6 +39,22 @@ object CallNotifications {
         )
     }
 
+    @SuppressLint("MissingPermission") // checked just below
+    fun roleLost(context: Context) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        val n = NotificationCompat.Builder(context, QUIET)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Call warnings turned off")
+            .setContentText("Argus no longer has the call-screening role.")
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(ROLE_LOST_ID, n)
+    }
+
+    private const val ROLE_LOST_ID = 1002
+
     fun body(w: CallOutcome.Warn): String =
         if (w.late) "${w.summary}. Tap Scam to report it." else w.summary
 

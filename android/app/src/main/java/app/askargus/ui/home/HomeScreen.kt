@@ -42,7 +42,6 @@ import app.askargus.ui.theme.ArgusColors
 import java.util.Calendar
 
 private val COMING = listOf(
-    "Warnings while a scam call rings",
     "A scam-site blocker for every app",
     "Family alerts on your phone",
 )
@@ -53,6 +52,7 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
     val scan = scanViewModel(container)
     val session by container.account.session.collectAsState()
     val update by container.prefs.availableUpdate.collectAsState(initial = null)
+    val callsOn by container.prefs.callWarnings.collectAsState(initial = false)
     val startOfDay = remember {
         Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -75,7 +75,7 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
         LivingEye(EyeMood.IDLE, Modifier.fillMaxWidth(0.62f).align(Alignment.CenterHorizontally))
         Text(session?.name?.substringBefore(' ')?.let { "Hi, $it" } ?: "Argus", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Check anything for scams. Protection that runs by itself (calls, texts and sites) arrives in the next updates.",
+            "Check anything for scams, and let Argus speak up while a scam number is calling.",
             style = MaterialTheme.typography.bodyMedium, color = ArgusColors.MutedText,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -103,6 +103,10 @@ fun HomeScreen(container: AppContainer, go: (String) -> Unit) {
                 Spacer(Modifier.height(12.dp))
                 ArgusButton("Sign in", onClick = { go(Routes.signIn(back = true)) }, modifier = Modifier.fillMaxWidth())
             }
+        }
+        ArgusCard(onClick = { go(Routes.SETTINGS) }) {
+            Text("Call warnings", style = MaterialTheme.typography.titleMedium)
+            Text(if (callsOn && session != null) "On" else "Off, tap to turn on", color = ArgusColors.MutedText)
         }
         ArgusCard {
             Text("$today", style = MaterialTheme.typography.displayMedium)

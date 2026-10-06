@@ -15,6 +15,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.IntentCompat
+import androidx.lifecycle.lifecycleScope
+import app.askargus.calls.CallRole
 import app.askargus.core.Incoming
 import app.askargus.core.IncomingParser
 import app.askargus.ui.auth.GoogleSignIn
@@ -27,6 +29,7 @@ import app.askargus.ui.theme.ArgusTheme
 import app.askargus.ui.theme.argusEdgeToEdge
 import app.askargus.web.WebPages
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity(), Host {
     private val container get() = (application as ArgusApp).container
@@ -50,6 +53,11 @@ class MainActivity : ComponentActivity(), Host {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch { CallRole.reconcile(this@MainActivity, container) }
     }
 
     override fun onNewIntent(intent: Intent) {
