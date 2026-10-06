@@ -530,7 +530,8 @@ lookup with a 3 s budget (failure or timeout says nothing). Score ≥ 80 → hea
 "Suspicious number calling", below 60 → Activity only. A repeat ring within 2 min doesn't warn again. Buttons: "Not
 scam" (on the phone only) and "Scam" (`/api/app/report`, clears the shared cache). Server side, `lib/phone-lookup.ts`
 uses the shared 24-hour cache (`phone_verdicts`, migration `20261006000000_phone_verdict_cache.sql`), saves risky
-calls to history as kind `call` and alerts family at ≥ 80.
+calls to history as kind `call` and alerts family at ≥ 80. Engine (`api/argus_api/checkers/phone.py`, text rules):
+India's 140/1600 series and the bank-asks-you-to-call-a-mobile text rule.
 
 **Next:** Phase 3, the scam-site blocker (see `docs/superpowers/specs/2026-09-30-android-app-design.md`).
 
