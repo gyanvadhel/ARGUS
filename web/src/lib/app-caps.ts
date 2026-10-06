@@ -3,11 +3,12 @@ import type { ServerSupabase } from "@/lib/app-auth";
 import { appLimitKey } from "@/lib/rate-limit";
 
 // Daily caps per account, so one phone can't use up the free services everyone shares.
-export const APP_CAPS = { scan: 500, handoff: 20, invite: 20 } as const;
+export const APP_CAPS = { scan: 500, phone: 200, handoff: 20, invite: 20 } as const;
 export type CapName = keyof typeof APP_CAPS;
 
 export const CAP_MESSAGES: Record<CapName, string> = {
   scan: "You've reached today's limit of 500 checks. Try again tomorrow.",
+  phone: "You've reached today's limit of 200 call lookups. Try again tomorrow.",
   handoff: "That's a lot of website sign-ins today. Sign in on the website instead.",
   invite: "That's a lot of invites today. Try again tomorrow.",
 };
