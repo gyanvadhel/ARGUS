@@ -21,10 +21,15 @@ import app.askargus.R
  */
 object BlockerNotifications {
     const val CHANNEL_SERVICE = "blocker_service"
-    const val CHANNEL_BLOCKS = "blocker_blocks"
+    // v2: Android won't raise the importance of an existing channel, so the pop-up version is a new one.
+    const val CHANNEL_BLOCKS = "blocker_blocks_v2"
+    private const val CHANNEL_BLOCKS_OLD = "blocker_blocks"
     const val SERVICE_ID = 2001
     private const val BLOCK_GROUP = "blocker_blocks_group"
-    private var blockNotifId = 3000
+    private const val SUMMARY_ID = 2999
+
+    /** One stable id per site, so a repeat block or an Allow replaces the card instead of stacking another. */
+    fun idFor(name: String): Int = 3000 + (name.lowercase().hashCode() and 0xFFFF)
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -33,9 +38,10 @@ object BlockerNotifications {
                 description = "Shows while the scam-site blocker is active"
             },
         )
+        nm.deleteNotificationChannel(CHANNEL_BLOCKS_OLD)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_BLOCKS, "Blocked sites", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "When Argus blocks a known scam or phishing site"
+            NotificationChannel(CHANNEL_BLOCKS, "Blocked sites", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "When Argus stops a known scam or phishing site from opening"
             },
         )
     }
@@ -63,47 +69,74 @@ object BlockerNotifications {
             .build()
     }
 
-    /** Quiet grouped notification when a site is blocked. */
-    @SuppressLint("MissingPermission")
-    fun blocked(context: Context, name: String) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-        val nm = NotificationManagerCompat.from(context)
-        val id = blockNotifId++
-
-        // Individual notification
-        val allowIntent = Intent(context, BlockerActionReceiver::class.java).apply {
-            action = BlockerActionReceiver.ACTION_ALLOW
-            putExtra(BlockerActionReceiver.EXTRA_HOST, name)
-            putExtra(BlockerActionReceiver.EXTRA_NOTIF_ID, id)
-        }
-        val allowPendingIntent = PendingIntent.getBroadcast(
-            context, id,
-            allowIntent,
+    private fun action(context: Context, action: String, name: String, id: Int, requestCode: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            context, requestCode,
+            Intent(context, BlockerActionReceiver::class.java).apply {
+                this.action = action
+                putExtra(BlockerActionReceiver.EXTRA_HOST, name)
+                putExtra(BlockerActionReceiver.EXTRA_NOTIF_ID, id)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    private fun openApp(context: Context): PendingIntent =
+        PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+
+    private fun canPost(context: Context): Boolean =
+        Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    /** Pops up when a site is blocked, with a way to let it through. The browser only shows its own error page, so this is where Argus speaks. */
+    @SuppressLint("MissingPermission")
+    fun blocked(context: Context, name: String) {
+        if (!canPost(context)) return
+        val nm = NotificationManagerCompat.from(context)
+        val id = idFor(name)
 
         val n = NotificationCompat.Builder(context, CHANNEL_BLOCKS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Argus blocked $name")
-            .setContentText("Known phishing site")
-            .addAction(0, "Allow", allowPendingIntent)
+            .setContentText("Known scam site. It can't open on this phone.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(openApp(context))
+            .addAction(0, "Allow anyway", action(context, BlockerActionReceiver.ACTION_ALLOW, name, id, id))
             .setGroup(BLOCK_GROUP)
             .setAutoCancel(true)
+            .setTimeoutAfter(30L * 60 * 1000)
             .build()
         nm.notify(id, n)
 
-        // Summary notification
         val summary = NotificationCompat.Builder(context, CHANNEL_BLOCKS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Scam sites blocked")
             .setContentText("${BlockerState.blocksToday} blocked today")
+            .setContentIntent(openApp(context))
             .setGroup(BLOCK_GROUP)
             .setGroupSummary(true)
             .setAutoCancel(true)
             .build()
-        nm.notify(2999, summary)
+        nm.notify(SUMMARY_ID, summary)
+    }
+
+    /** Replaces the blocked card once the person allows the site, with a way to take it back. */
+    @SuppressLint("MissingPermission")
+    fun allowed(context: Context, name: String) {
+        if (!canPost(context)) return
+        val id = idFor(name)
+        val n = NotificationCompat.Builder(context, CHANNEL_BLOCKS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("$name allowed")
+            .setContentText("Reload the page. It may take a minute to open.")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(openApp(context))
+            .addAction(0, "Block again", action(context, BlockerActionReceiver.ACTION_BLOCK_AGAIN, name, id, id))
+            .setGroup(BLOCK_GROUP)
+            .setAutoCancel(true)
+            .setTimeoutAfter(10L * 60 * 1000)
+            .build()
+        NotificationManagerCompat.from(context).notify(id, n)
     }
 
     /** Notification when the VPN is revoked (another VPN started). */

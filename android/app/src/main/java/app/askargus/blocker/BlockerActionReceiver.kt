@@ -14,25 +14,33 @@ class BlockerActionReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_ALLOW = "app.askargus.blocker.ACTION_ALLOW"
+        const val ACTION_BLOCK_AGAIN = "app.askargus.blocker.ACTION_BLOCK_AGAIN"
         const val EXTRA_HOST = "extra_host"
         const val EXTRA_NOTIF_ID = "extra_notif_id"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != ACTION_ALLOW) return
+        val allow = when (intent.action) {
+            ACTION_ALLOW -> true
+            ACTION_BLOCK_AGAIN -> false
+            else -> return
+        }
         val host = intent.getStringExtra(EXTRA_HOST) ?: return
         val notifId = intent.getIntExtra(EXTRA_NOTIF_ID, -1)
 
-        BlockerState.allow(host)
+        // The block is lifted or restored at once; the saved list catches up in the background.
+        if (allow) BlockerState.allow(host) else BlockerState.disallow(host)
 
-        if (notifId >= 0) {
-            NotificationManagerCompat.from(context).cancel(notifId)
-        }
+        if (allow) BlockerNotifications.allowed(context, host)
+        else if (notifId >= 0) NotificationManagerCompat.from(context).cancel(notifId)
 
-        val app = context.applicationContext as? ArgusApp
-        app?.container?.let { container ->
-            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                container.prefs.allowSite(host)
+        val container = (context.applicationContext as? ArgusApp)?.container ?: return
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                if (allow) container.prefs.allowSite(host) else container.prefs.removeAllowedSite(host)
+            } finally {
+                pending.finish()
             }
         }
     }
