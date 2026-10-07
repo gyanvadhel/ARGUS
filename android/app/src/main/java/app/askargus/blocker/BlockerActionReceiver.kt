@@ -31,8 +31,11 @@ class BlockerActionReceiver : BroadcastReceiver() {
         // The block is lifted or restored at once; the saved list catches up in the background.
         if (allow) BlockerState.allow(host) else BlockerState.disallow(host)
 
+        // Always cancel the existing card first — MIUI won't reliably replace by same id from a receiver.
+        val cancelId = if (notifId >= 0) notifId else BlockerNotifications.idFor(host)
+        NotificationManagerCompat.from(context).cancel(cancelId)
+
         if (allow) BlockerNotifications.allowed(context, host)
-        else if (notifId >= 0) NotificationManagerCompat.from(context).cancel(notifId)
 
         val container = (context.applicationContext as? ArgusApp)?.container ?: return
         val pending = goAsync()
