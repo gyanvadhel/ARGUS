@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Archivo, Geist_Mono } from "next/font/google";
+import { SmoothScroll } from "@/components/fx/smooth-scroll";
 import { ServiceWorker } from "@/components/service-worker";
 import { Toaster } from "@/components/ui/sonner";
 import { WarmEngine } from "@/components/warm-engine";
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`dark ${archivo.variable} ${geistMono.variable}`}>
       <body className="min-h-dvh font-sans antialiased">
-        {children}
+        <SmoothScroll>
+          {children}
+        </SmoothScroll>
         <div className="grain" aria-hidden />
         <Toaster position="top-center" richColors />
         <WarmEngine />

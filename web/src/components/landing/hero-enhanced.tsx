@@ -167,7 +167,7 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
   }, []);
 
   const dive = useCallback(() => progress.current, []);
-  // While you type, the eye reads along the field.
+
   const target = useCallback(() => {
     const el = field.current;
     if (!focused || !el) return null;
@@ -241,7 +241,6 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
           </div>
 
           <div className={cn("transition-transform duration-300 ease-out", focused && compact ? "-translate-y-6 sm:translate-y-0" : "")}>
-            {/* The line of sight: you write on a single hairline the eye is watching. */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
