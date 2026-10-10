@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Smartphone } from "lucide-react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { previewScan, type PreviewResult } from "@/app/preview-actions";
 import { LevelPill } from "@/components/app/level-pill";
 import { Eye, type EyeMood } from "@/components/eye/eye";
@@ -15,8 +13,6 @@ import type { ScanKind } from "@/lib/types";
 import { useMedia } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
 import { HeroBreakdown } from "./hero-breakdown";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const SAMPLES = [
   { label: "a phishing link", value: "http://paypal-security-alert.net/verify-account" },
@@ -33,22 +29,15 @@ const READS_AS: Record<ScanKind, string> = {
   call: "a call",
 };
 
+function smooth(a: number, b: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
 function PreviewLine({ result, onClear }: { result: PreviewResult; onClear?: () => void }) {
-  const lineRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (lineRef.current) {
-      gsap.fromTo(
-        lineRef.current,
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-      );
-    }
-  }, []);
-
   if (!result.ok) return <span className="text-risk-high">{result.error}</span>;
   return (
-    <span ref={lineRef} className="flex flex-wrap items-center justify-between w-full gap-x-3 gap-y-1">
+    <span className="flex flex-wrap items-center justify-between w-full gap-x-3 gap-y-1">
       <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <LevelPill level={result.level} score={result.score} verified={result.verified} />
         <span className="text-foreground/75">
@@ -73,97 +62,36 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
   const overlay = useRef<HTMLDivElement>(null);
   const shade = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const heroTextRef = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PreviewResult | null>(null);
   const kind = detectKind(value);
+  // On tall phone screens the eye sits lower, filling the space between the headline and the field.
   const portrait = useMedia("(max-aspect-ratio: 4/5)");
   const compact = useMedia("(max-width: 640px)");
 
-  // GSAP scroll-driven animations
+  // Scroll drives the dive into the pupil: copy fades, the camera pushes in, then black.
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: 1,
-          onUpdate: (self) => {
-            progress.current = self.progress;
-          },
-        },
-      });
-
-      // Overlay fades and moves up as you scroll
-      tl.to(overlay.current, {
-        opacity: 0,
-        y: -90,
-        ease: "power2.inOut",
-      }, 0);
-
-      // Shade fades in to black
-      tl.to(shade.current, {
-        opacity: 1,
-        ease: "power2.inOut",
-      }, 0);
-
-      // Title scales and fades
-      if (titleRef.current) {
-        tl.to(titleRef.current, {
-          scale: 1.2,
-          opacity: 0,
-          ease: "power2.out",
-        }, 0);
+    let raf = 0;
+    const loop = () => {
+      const el = section.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)));
+        progress.current = p;
+        if (overlay.current) {
+          overlay.current.style.opacity = String(1 - smooth(0.03, 0.28, p));
+          overlay.current.style.transform = `translate3d(0, ${(-p * 90).toFixed(1)}px, 0)`;
+          overlay.current.style.pointerEvents = p > 0.2 ? "none" : "";
+        }
+        if (shade.current) shade.current.style.opacity = String(smooth(0.7, 0.95, p));
       }
-
-      // Hero text subtle parallax
-      if (heroTextRef.current) {
-        tl.to(heroTextRef.current, {
-          y: -40,
-          opacity: 0.3,
-          ease: "power1.out",
-        }, 0);
-      }
-    });
-
-    return () => ctx.revert();
-  }, []);
-
-  // Entrance animations
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(heroTextRef.current?.children || [], {
-        opacity: 0,
-        y: 30,
-        duration: 1,
-        stagger: 0.15,
-        ease: "power3.out",
-        delay: 0.3,
-      });
-
-      gsap.from(titleRef.current, {
-        opacity: 0,
-        scale: 0.9,
-        duration: 1.2,
-        ease: "power3.out",
-        delay: 0.5,
-      });
-
-      gsap.from(".sight", {
-        opacity: 0,
-        y: 20,
-        duration: 0.8,
-        ease: "power2.out",
-        delay: 0.8,
-      });
-    });
-
-    return () => ctx.revert();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   const dive = useCallback(() => progress.current, []);
@@ -214,7 +142,6 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
           )}
         >
           <div
-            ref={heroTextRef}
             className={cn(
               "mx-auto flex w-full max-w-[1600px] items-start justify-between gap-10 transition-all duration-300",
               focused && compact ? "max-h-0 opacity-0 overflow-hidden -translate-y-4 pointer-events-none pb-0 m-0" : "max-h-64 opacity-100",
@@ -317,7 +244,6 @@ export function Hero({ signedIn = false }: { signedIn?: boolean }) {
             </form>
 
             <h1
-              ref={titleRef}
               className={cn(
                 "font-display pointer-events-none mt-4 select-none text-center text-[27vw] leading-[0.74] text-foreground [transform:translateY(16%)] transition-all duration-300",
                 (focused && compact) || result ? "hidden opacity-0" : "opacity-100",
